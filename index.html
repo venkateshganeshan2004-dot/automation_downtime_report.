@@ -1,0 +1,1939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TDConnex — Automation Downtime Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #F7F9FC;
+      background-image:
+        radial-gradient(ellipse 55% 40% at 10% 0%, rgba(239, 68, 68, 0.055), transparent 60%),
+        radial-gradient(ellipse 50% 40% at 50% 0%, rgba(245, 158, 11, 0.05), transparent 58%),
+        radial-gradient(ellipse 55% 45% at 92% 8%, rgba(30, 58, 138, 0.07), transparent 60%),
+        radial-gradient(ellipse 50% 40% at 80% 95%, rgba(16, 185, 129, 0.055), transparent 60%);
+      color: #0F172A;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .premium-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.06);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .premium-card-hover:hover {
+      transform: translateY(-2px);
+      border-color: #CBD5E1;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05), 0 16px 32px -12px rgba(37, 99, 235, 0.10);
+    }
+    .sidebar-surface {
+      background: #FFFFFF;
+      border-right: 1px solid #E2E8F0;
+      box-shadow: 4px 0 24px -12px rgba(15, 23, 42, 0.06);
+    }
+    .nav-item-active {
+      background: linear-gradient(90deg, #1E3A8A 0%, #2563EB 100%);
+      box-shadow: 0 6px 16px -4px rgba(30, 58, 138, 0.35);
+      color: #FFFFFF;
+    }
+    .nav-item-idle {
+      color: #475569;
+    }
+    .nav-item-idle:hover {
+      background: #F1F5F9;
+      color: #0F172A;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #2563EB 0%, #4F46E5 100%);
+      box-shadow: 0 4px 14px -3px rgba(37, 99, 235, 0.45);
+      transition: all 0.18s ease;
+    }
+    .btn-primary:hover {
+      filter: brightness(1.06);
+      transform: translateY(-1px);
+    }
+    .input-clean {
+      background: #F8FAFC;
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    .input-clean:focus {
+      outline: none;
+      background: #FFFFFF;
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #F1F5F9; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+  </style>
+</head>
+<body class="antialiased selection:bg-blue-100 selection:text-blue-900">
+
+  <!-- TDConnex Branded Loading / Splash Screen -->
+  <div id="splash-screen" class="fixed inset-0 z-[90] flex flex-col items-center justify-center p-6 bg-white transition-opacity duration-500" style="background-image: radial-gradient(ellipse 55% 40% at 15% 10%, rgba(239, 68, 68, 0.06), transparent 60%), radial-gradient(ellipse 55% 45% at 88% 15%, rgba(30, 58, 138, 0.08), transparent 60%);">
+    <div class="flex flex-col items-center text-center max-w-sm w-full">
+      <div class="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xl mb-5 animate-pulse">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAuIAAAGDCAMAAABZfYVvAAABU1BMVEX///8IAIn/mTQQhwX4wAlAQEDuGibtKDn///38///8//0DAITsKTv///vtKjb9kyH2xIkAAG/99/jAv9j73ODpdoPWIzTxITbiAAD01nvfKS/9lSn20dLdAAzwEx/3wRvoREv43Jj++u/1okzmYmvrqa356KH69+Hw8PX11G5GRZMAAHfIyMgAAGD53bkvLIfn6fh4daPU0+FiYmLxyk4ZGRneUFi0tMgAcgDwjQz56qzss7c3Nze52rYAfADw9vBImkFYV6ArKyuyzLOEhITb29tLlEO5ubkXGHl6r3julSuRkZGqqqpvb29PT0+vsM73z6PL4cmHhbLuwi0AAADyrGaOuY3f7N1ioGH2vo9FQJ9Yn1Vta6v4t3iZmLv66cpUVI7mjZH89ctJR4kuhimly54pKXcZGm0zNHrr1WFkY5bU8dDnyB325eAWFoXjeHb51MS7qUAZAAAgAElEQVR4nO2d/0PT1tfHAw5MUq/Q1k20gK5MG6lA6ZwfRQF10wlz44vD8hkKirDt0Ud9/v+fnntv0tLkniQ3X0pB3q/NbYwmzZd3Ts4995xzDQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACArwcz592Z/p+iaH9C2SzjIbR3G/3t7UPI86vBScTWUYI+zDYNq71vy2Qs4qMC8TFPa3mRcG+Q+NeOZdmMWTnStW+h8JhvlzqP+1QixKMjTXjE09X9mEHhXzvMNgwr/mO6mNaRWTRNmz8+diTikeBPmc3yOwIpcffJ8b9FWPAPg8TPApZdKrFSbjC7+80v3hDRVKu5m/FEQOJfO9xzHv8uT74tcV2LPTPTYrX10a2tqRi2trbejI7Oztaq3LJaFjPlM2JZSaTHN+LeliGHmqVGc23z9ePp6TkNNvMeboOThm2MD18+fzk3zk98KZlC4lyttdHV+yMjlVhGXFantkZnucy5uLn/YCeRnumNW0uN8uZ0vVisFwqFAR0Kda7x/HwkcAKxjbvDly+cPy/+7iD+U/4c/HOh+2fqFxcuXBwbt6RmrNrWyKAuXOj8HyOVkdU3szXhOiT1H/jnncba47qnbj2BC41Pl3tyXcGJwTTuXr5w4fL5/Ji45O659kZf4VLl8s9qZWRqdK/KuLeTzIw75fl6sUvZmiKHxL96hMSFCc+NC2OXpBfN1u97uk2mcs7IIDflpthLbMjalHFJ03DKH4p1oWvpoOi6KZ7E4ah8vXCn2RYSz5WJS1Kd1a1k8vZrffXNXtVkNotRH3ejucQNp/lhpq6takXiGHB+vfRK4ny/1l4GhQtLPrVea09+RpwAV7hpNHfr9QF9ww2JnyF6J3Fmz44MrmbReKWytcfi5qRMg1XN5vtiWoFD4l87vZT4erLBJiXyqfWqKQw1fezudCVz1oQJFxpPpXJI/OumVxK3bZONZpY498i5xvnOyGOXU6K26WzOuBY8pRmHxL9uTrjEhR2vWWHZK9xFMY3GZjGdtCHxs8FJlzh3yEerVpjEmcGc+Xpa8w2Jnwl654vnJPHByiDXOBkel374ZupICiR+Njj5Eucan2UiyUqRoah72E0ZDIfEzwynQOLcH9+zGVHHw//P2lxmhUPiXzmnQeKDI1tVy1ID5KbRfJ9d4ZD4V84pkPgq1/g6s5g6BySGmpA4iMY0LSHxixfOX0yg4YsXIz89dslieVpxLvO9YFRFZF7tPg8baRa8PyIdKxadTMOM1dM6m6f9AjO6tDvm12cAT+Jc5AoihfzChctqEiL/1eXz6ufdbfgDMDFuRFjxCvmf0VS2WGD6hzGj+TbKTZE54zp+jEamIV3XnOQqt7texJD07sl927bdi/0GTqC3++8lwsf9YfiitMwEV89fvqqaaS5l+uOSy2PjVkhcPFzT0WqvjKz7q9xEduFmhIDb4tay4s0YC2oysiNLwittRhdpu/lkKRAdD+S+w+Rn5VB6foolLodxl74bvjgciuqTXOX/K/zzw2PvSmFWvF3BFqQii9+iND7l98VFduF0eFK4tpNSKNT/2Y1LSucnk10mcYY2vU6EuGO+N+2u/Xs5xRI3Lt39IRRiLMot9fXwDX64UbLsEImvjpK8ebM1NXX//kiEyEdmgxLfjSh74MotFp9Pv349H8+aV9YcwHT/Nv0/CwfJkGV3R7fVNCMd6fYuYvsQVDv7POrREXXvwtLTIjeRaNZ9x5wYucUJVTszI1pGjE+ofsrF4W8jthC7pCVemaqG3+HZ2dGpkVCVV6bcNlseZognLhIOC/WZv+fXmo7jaPXEIC8JP35hHcV/thZfrWzvPFPZXnm1+LHqHY7JjJA6PH7YBtu/eeXWnThu3bpy5eb+fo2J5gOyo1iEYCz+sNlGafzGl7ux/PDl3Y0H46LcUDg1oXlt/sN2+yzxTRrl3fm3j6dDef94fnO37Hgb+V8pt//4MchvTvyXd3j6i7L9j/QdizubsJcPf9wvhUg8/N0ldxki8VrI9zObu+82mx2lTflqZXBkz2LdlfK7pML5/6zXNxuZm6OYtrTXrcOVg4Olc2Es3bt3sH3YEhuQbwK5J76bhZcvv9HkGufOlYWaIc42qnhVHF7p3fWJicnhyXiGJycmrn5398Z4SWxomVas5yU7LBml8uu//3kenSQhjMrn5//8O1/2sj+79jL0ZCjIkxf6t8H5Td3+YYLtNbCZFSrxSBJJ3GibK8tita37lFNeWa2MWiKG34aMiYsgSvF1Q15oDUMVx8edpXB5d+l8Z5FrwQgxjaZV+x9dfXcp/eWVfTPao7CsT9+NcfFqMSk/ODk2dvXLg5Ic+sYOLkS54Obzgm5kShiXv3cdv225/ZOi0KGhn25r34EXqsI5acx4KMcmcdHvzTUA9uyUKnGu8NXVT1aXxMt/kZe9/m85l067fBeLB/fi9e1y7+Cw6rVHUqndSaFw8efOAos4Fcv4NMZlqynxjsq5zCe+HTdCj7YLZ7Moszjj9V3wSsLFG9TnhvxCSXzoyVPNu0A+IUNP9B+RDhH+Bgt1VKKH16G+eMjXu0Mb7oIyy6ptEXa8MlhZ9yQunERrk5rYLNQ/NMSe3E6FyS+Eh7BwHx9pC1yK/NFHQ0TXTb9x5D+xW8kV3hb5/y5IY8oNDaX1q7omPMjY2A/jhog0hvlWwg83ynNFzzprzi/Ifxb/LndHPwlHhbsaf+jZ4adPHlIKz9dRMfO24tU4C8uks0L549xTcadohLVvfFAlXmgrPCPi4VhJJHAp8pWq6H/qVw0zrX1tN5wS+st9Jp9rYmTxYCylwoUpn/jyyXInRShEz47dmRSFgqK4sMi9lc5NKJGexpPfde7D0yFS4b8kupmx9EHipmWzPcJXGRzkrwC3VSK/3/9RUgxFLOV9Mw8vxTRaO4kVLgx5iwWMuBi0XsmgcCHym1VbhKFULV5Pa8SlxseuPxBXmrxaopZqvpi6UpBr/Gi/Dqnxn36Lvw3Oj+Qb4MektzOG45e4aNtpsXUydjjrjr6EFd9Van24xOfW5KxnZloHyQUuRf4xYBUtK5Un7udWjTsUpiLxTxMZFC488+F3JSPsLgqFp6o0kV55ca3raG+TGv8z1p92SD/+4VCyWxnP8UvcEo6cVaXyW7in4m7NTLKcrTDvRboy8nHpnEYghdT4ouErUOKnsp9Z4t/cWbBN0zc6FArifsrlbCLnzgp1+kwONNP2M5A3ot6d2EZHRf6MG3K+IBX+UHekqs3xS9zd2N4jOrBUttzmymLy/rF6/UWuSVY3RQSxP6bUt2vHRXuN7j0uZHHFPV4uyGDTkSW3Ldt4N5ZF367IucbtYNEgvwTW2kxqL0XciIH6+yY7Gj4QsW0u1ifRM0C3/yQVniKYEkO/JE6bcS8ew32R/3xWL6ww4tlP2EzrpbgsfeRDrM6MDRdPHhL/5uW+ZXQ/OSYflPyQyYS7EucaV2pN+Huwma2WSrgqu6WjabrSL5TGn0TOUoaEC/MNprjXsi8SN2zTml1V3PHVwT3voIw1Ip4yl0tlw/J2FoWfO/eo1RWM4+7FzWs5SPybO/tW95SKyR/m69klPiz9cf9F4xdXeoFZjLhwVZpdHqPzY9LQSEi4UGOQmph+SZzRrcn/6+3cIaLihbdUZC0p9qsMbopkZfnoMLhrkTGg4nKNjznNrl7UNpf4dzlIfHjy6o1SwIqbZrk+kMVPceeANp2uZ+cprfFQm+z8cRzhQu98+yVxg/RU3shdm0bjtXoHPm9ml7hlLGZyUwRLh0f31swcM+yI/PuqdfTqt/nr4WoOCh8eHrs+HpwAct5mLRcUQ9V6o9vFv01qNsyzdn4nPZvfk+RvadMniYvZzlliinOLyWMSqeLKZZ1r5uCKtzK6KYJnrY7G+WnkJHHujvuuT14SHx5TwirNXApi62u+nf5KTuP8QcdH6PHpj7kHU9xr2R+JC4jpHy/FxTTKxGjzvRGV0aGBMGaHmY04N+MrnQBfjhLnrspRcmCOEh8evuG/ldnbi8nbUXjsdN8N5wVpxknZklHGh3/kH0xxr2X/JF57Q0hcjjdNarQ58CHz4oLMaO1kV/i5cwcbnauQo8RfLnSVZ+Qo8cm7l3xXwXmeQ+MOYcYb/t3+Rmr8F9X5+JVU+NCvme5tOH2UeFWZ4axUVvdk8Y21G5A49/0+7xpZJzaZcZiHwvmIs/0+yVPi3IwbpldWk6vEJ8SI031BCG+/WVRTI2LMuvxA8CPFQF+Dp2TocOi3oJBuUy7Nw4cvcs2g7aKPEjdViQ8Orsv6GoeQ+FzZYFnXFlzeDgunLJGESfxZeyI/V4lfWziSOKMkPhbFZGhGy+TdTwbzUjiZUVJb6AkF14thyAUglSBjYaC4Gbi6T3+ntBu0ziHBl0SlQonop8SVyHhb4mrMkF/ivxsiBTTb2YaEU5aWDrZfHf4c4PDV9qOwif5XXg4fJfFrd24u0Nz8/sqVWy/D4+hXapb3oqIkPnnh3QOaGzfevXv3w/UJmZmoCn1y4kGpytzd8mv7WlFroVCcnt/9Tyhrm9PEKqf1x0FV3qbUG/Cxyedg6MkvvRlquifdN4lbSmnEqgiMC0flabDih1/ffx0j6wqxyyu0YLd/3mgtLwdPkC23WosrdNXb9rKbSkBK/PuICuVabW/hSlhWy8v99hQnKfHr46FnVip9ujT+4N1dOv127Msn99ERRsJR2i8VuBPYbITum+M01xQHnm+lGN5fqdChb8jp/EIq/PfeKbyvEt8LZo2visC4KDtvKmHxQmE6e/n3BjnY3Flste9/sPDDZK0N0rd5tOg1ByIlHnLFvH+z6t7CLdqUf1/1PhYmccu2FGSFsfy7dOkGKfLJq5/cKQWxZHUj6IoXBuplr1DXdw0M72c5yLeUGFdhYEaReOkF6WcfmejSb4TA+UPQo2CKe937KHGqMGLLFPUvali8UHicPVOc9FN2NhjVy0qeo0iNaq1QW71yqy4TSfwosYXVbr78hlA5H3Aaob64tOJhTQC8Qy598pK3/EIfe+BN43O5ln0SL7gRbmb6+m0oxy1afgTW6uASVy1/iQyrDHUc7Rekwv/oVTDFPf7+SZyMGm4xm2unqdRtihysrJBz9zutSOeH27DlV+pWS9xTCfXFQyTegcvXrJLZW3f2vahRqMTDypnbT6VReiAq9oOb/uDdTS7VNWVZmelGbKyKPxrB1C0+3myqH6QdkSFvJp+cH3o41IPcqy76J3HTqI4SVrwqFq0t/xW8DQP14Pg9OdTMpoiN2JHrlJvkdo82UktcNNzgoiE1vuBF/hNLvLNzy7wxpmiceyqWu1vDUEby9V2NnkR8mDqvRA0JiYeEVdwhJz3L38NginvofbTi1f9SEmdC4s8ViX/ezXim3BV/RDkchhG18qe0jRvP1A0PZTZBKomLqg7bYFSKInfG7UhHJUbiJvfVzS9jihkXfVYNT+I+pYpSzKYZO21sGqwUnI4rFMnMTzIoKL3tkHAhMTmUK/0MGlISn6qJe1xWJzezSVwqdZFyU4zoXgxyQ0ZEYl6llrjcq82sKtF95VbNivbF4zu52aIiLijxsRsl0zsdxRh/djRyf0TBftAZF3M/hP9OeyO/P6V9mF5lphxxwiRe8SSuTrY9X4vfY9SX0a74it4Qlhinriy7u00lcbFl1SBK9+/stWchU0ucc0NpMDT2JVTihb90rCi3836JS/NPD1FfPCTDKr8QAu9dZsoRffTFGVGjLCRuERIvZJa4aSyvKBJ/tqGXvEjMim7LLnCpJc7f/BZT4+PXFjL64gK7pJhxPt4Mlfi0hsS5K8P8jkrB88Wp46GHnKTCe5aZ0n3sfZO4ydQFxqXErV5YcUaNGneWIx3xzsaG6qk82nB/k1biIuaseuPXFmKmfnQkbhrfBss+J7/7lEniovHrriLxRtg7kEwHJyXeizKfAP2VuOKKS4nblC+eXeLExM8KN+JaElc9lYNF9zdpHRUxobJ/TdF4HhK3rAeKxMfcpHFV4gVP4uG9z0y3eZbzODBOHZhphE7FkaETynvRuVQZ6afEzRArznogccaMn0mZ6kyYmlQS7qH7m7QSF1RVZ/x7r9dzJituX5rwb8mdcZlQa9ISN+3ozuimm6Do345b8XDz/5Ryx1WFa/XMykp/Ja7ti+dhxdWAyrNWeokvvXJ/k0XiRDfEXCRula5OBiUu81tUifMfuBW3bSIxoI0tG646StePwvMID+e2hsQf/tjjcKF3OU5WXLxnvriw4qrEl/UkblHOuAypZJO4cVOR+JWakTFoKDYu3VWihg+8HIUwRyVyf6bhvJ4JGvH66yiJ0P2DfAoPqXrLmxMn8U+ijTcRUck49cPvrVoO8Uys1JBS4kvZJW5avZG4xUpKD5YIif/VcGJolDfriusYLN4MQtZn+uh9MEXSzwn8Ej31Y1Glm4WMEmfMVlNNtjU35g+d4sgvyahhNitOSPxWHlbcLikhlTFZwEk6KoV6DMXiDLWaATl/30VMWCXntSDCOXk5KgY5gZ+HxJXY9oruoVK9KXKQOOGoHLfEBzR7i6sKj3TFJZFhld70TKHop8SJTEPRZUJkGqoNyTKnYS1nkDgVNdz5WiSejkJhM67YskT2nfBs+LEEUyR9lbiSL17hEhc9odRk2oHC64xnqkr83ivdQzWJTKydDePMSJzapNiM7YdAt8h3h5rHEkyR9FPiStXPoCyJMNWSCOExPs5U1mYaLWX+/uBQe+MzLnFC8fXHTnxDhF9DJP5w6HiCKZK+Slyt3azQhW2iw8G/RnzOZ/iXURI/l0DiLUXij86wxLn7XixrlBk+/SNE4scUTJH0M2hIVeD/V0o8uCChlLh4teUq8aVMEn92diUuFl2ad+L7NtGtC49zqCnoax8VZWvRZELgbKq9Pv5udi8UlvQ0MzkqDFY8oPDCv9wTj70bYaHxY5rW9DhR3bA4s2LXwaw2eVmfrxmMWvFQ8zwzSfysDze71S3/8XytFFgsg4Bc6cQ1473pQUtzsnoaDro99E2T6Gkoei9naaOipovf05W4QUr8TAYN3aWW693LEoZBrwPhaVxpA9c7TlZn2sFO205ipZ+3biuEtKhBwyXdoCGZTXs2JS6DW3O7GkY4PGLoalz7ImWljxInVkLxFl8WC/uqgfHpRnyheARZpn7sr3l2M6nG69NrTvxiBnQtcpc/fmxBlf5JnFp6s9Jpoa8u2Fb4u5yphX4WiTNV4nnkqJwAiSeeva9/ni+X4oeaDtm6sFviQz0v2vTo3yoRVcoVH3XLr4wGYWvqGRZsE8Uraqbhtm4LOWYoOVw5ZBqeBIkTTZXDEC5KkQu8IdtkxBxDfPlm70vvPfq0KCEz7b0pVeFezJAflBpSGSi8Dy+kiv1Ck+ot/oyJ09DZvCfJtCdC4gNqy1lK3qJ7bfHz692yo2UVyMZuQY33sldnF/2SuEWkGVYGIxclHJhby2DGyZIIzaofy2RKafPXIXG5hHJ4a/FOi/HP04/nd8vNhmPomHDjVw2F0ytI9IA+SdyyqHjK4FRVdlHjw7uymog1UPiQfrjJbwtRu7mh56lYVO1mDoVt/Zc4p/5XualBwxFL+7iVnHEHQDd2IziWsEofJM7E+tfkvE9ly7u/jDVfE57K32vGUX/KhOdJ9ns71Fshy6JavuVQnnwCJF7QbDIh74qpd/XjgilHZrzHDTvbB378EuevOtqIyzUiXImLdSLUPtgfHCNtk3HbaKn9flZCuxn7sIiF3g5+llfh7Ehcy6UThDR2o5ZL7nHbZZfjl7gtJinJmU3hiosOg6Jzh5j8UeOG9c200z+mRaUa7rS0vHvuiiubZmwV5NJ/ieu2CkoA2WL8ye8vQtt59pjjlzg34XysuSqWhCA2diVOpIy7g6O5tHX4XOJEYPxgUW8Au7GjzIxmbPjm8jVKPKRL/m2DXkGi92GVPlhxEU1RJzbFxqOG4S0sJiLjVEmsu26bt0hHovPkf4gVCbeF9qN8H/eriC1XlqUUT53ES4rE5xwj8/obR4R0yRcOCb1mcs/DKvlLPOzzFt+A2ZZtU/HCwcoq/2uv2wvZJeO1wo4zd3LNXYdG9zQZFVKRSd+mETEdLfpVmstED/1XEctZ6R2T0Q+JW6bSX7zuGDmsvO5BLtrmVduXyIU5e97W8PgkLvRtiUU1Z6eUzbxtWfe1bj6mNM7HnPOOXJbJU3mCc6Va6G+LMFjkVoxckNYdbZ42iRvMIlrol6tZl6XuQAdT2q0LnQj9945jk7hlihUMLFYTTgoVMBwcWbcMo2t1+eCKHR2Ni1ROb3yfSOJE92VhjUslFt66k8vFWHykbreTfiGULo5f4nZwrR+u8c1Spvy2LhzSTh9lh5MB8143YM5d4mEmUbgD1drs1n3ahHOJ3/9kcW/m6PNrarahe08GijMfyo6bPZ7o1hDrUp07OGSliJ3I4ntV4Usr7LRKvKy232yaOXkqtLfdlYxCe+q9DavkLPHBqf0azd7s+ps3qyMjUs2kxt8IV7Gzf2YGCzjlDfFUX58pTr9eKzcbOpTatfs/E57KuaVX7qKy/heCWM5SbsUoGy7nNk+lL85Yc0apGXzrJI7FSkcxuMkL0g/xrQNBfqSnK8vmbsVXV1fvhzAyEmLAXe7v+fbPbfSusmKv/84UizNaTDc8jROTP0LjzxaXmW12P1/uGYoFCVsrS+TSshvGabTicvXkYrAvSqH4Wuae6Fpy5g6ElEE6aaKHAjOY9OrJvQyr5G3FucpDjHSUvDkjb4IHJsx4qMa9GkKtRNDC44YrcaKtoSfylcXWskJr4/DRPXJ9cDFKPZUSZ4bpzAWTxAuFemG3Gde704/JlHFQSGZKMGBCJpL/1MOFCfOXeDhRKq+s7vmNqDAqa3N0Iybf7dFgur16HhVT8VS+dO6Rn4NzSyH6loXNLPEC4QR9cFTE+plq318+vKnPTSdgzQo6Kk/JjhLqOhBP6cU3exdWyV3icdY6hJFR0/K9KEVY0FDvht+K69hwMX/nSZwtE6sLpmGn1Y7onC6Jy0k1Kk95oKBrLlzq9bWq6etO5tBDTaLU/jY55HzSs7DKcVrxCCoijTboC5pGmZjFT05b4hZVgpmKV0eHeLokLmiGu38Jruljx3ckJbKjBF3ZozEqzZOTIfHVwVlmBYd7QkC7n/O4HR1HxcjHjMvie+8IT5/EnWnt91+kxH0R21/pREJatnSiVq8K3U6GxCujjLsp6oieDBymlrhJNlFOwWFnqHUaJS76MOUh8W5fnHY+QqvsSbe9V2GVEyHxylZNOHaKxEXC4dsc+pN1fHFyfdnkRny5k2V+GiVuNJUFCrJK/OmPpGZDs0/oef4nvQmrnASJV7b2bLKcRERVhDuetfNHW+Ii9E2UqCXkYPEoXnYaJW4SHSOzSZwOpkQ15zzOsMoJkHhlas8OSRIRtr08l26lDkLiksWMZnzpVVck4VRKnJtxzRkFPYnHZaZQ3CZ9956EVfov8crUbNjssXBemLEWPcmZUOKMqIxIpPDt5a5Jj1MpcbdqMGPfty6Jk+sPxi05SG/0sAdhlb5LXCqc2fR3iKkKYcezjTn9EjczueNLIiR+tKj4aZQ4H9g33mbVeJfE6WBKnFhDksd7sBZnaonb+Uic++EsIu3blItTN9/L7Li0N8XvqNhZhpxLz1q+gqPTKHFxAuV/Cwn6YEVKPO1MDt1f/0n+rcezWHFbXcM+qcAHR2tx2fgi0bO5KTReSBnP9UvcCEvH0uDedit4cKdQ4vwbSiJTOYsd70icHjj+pDFwDAnD5L6CRHqJM8veu59N4JWp9aoZUY/gfpGw443der2QdoykSNxoHd5LpfCVYMX+6ZQ4v6bO7vP0F7RL4nQhj177cNL+59+WObXELWaxGlllrK3w1TeiWDMuUVmkVTCj1Jwvpn2zCokH9rm8eC6xIV9aOlwOVjmeUonzs3DWprPMALVnNzNN4pBDzvxDh7ZBSfy8lsQZ3Q0lRNH+H0cqW7NVJgsPYu4ak5WahlN+XEw37BQS9yuTu/8b2wkN+b2djWUxeeR76fCnL73ETXKBcDeDkb/bSInrVC7oWHGblcpvM4THhRXnx0LmXmlPxYcktuRd6CYkfplr2sfF88Nf4l41ovvCXkozXhECrzG9VhHtNmNWo/y6WOykxHmXOlEybWePhnBWHiUQ+b2Dw5Ypt/QXBzEji8QXvrkW2PhK24ob6SVusdK7GCsu99PY5M6Ka8kLBe2LKS49/yMkHpJQpd85nI6o552RZVvjY1e53faJ/MLFyTgrLqmu6ybPyo+ttvU9tb5XTVx5ya2T09ycc1WeyOL8FfTF5VfbrcNnoRnhfhdFCHzZMKnQZtBRuZZA4rSjIrCFozJJSVxjv9xCxzkqAmbyy1lP82IUD4SUODnUTBLb1k0yz4JlW5eGhy9eDPriY+90JG5V11crIWU+hMorlZGR+6tTo9yASw8lWWsDJsuypMpnip2xkk5y8/smIQ3bMuzljZWDezEy5/reXmzZQjnEMTHjZtAQv1zQPqV9ReJXqtLbtvlfd7lMJyeH5V/838Njdy/pWXF+nDcm3M2G2/8ae6BuyITId/+ZKXaCK9pmfKAoWn2QzrROMOUIuiY/XyvOZTZ+VV7EbrjCYwIdEttke6NTsvlBjv8AAAL+SURBVCwzlvurq1NbW+uztaoslGS2ZSbrESEeCeHZOE6jvPt6ul6cmYltjC35t0ksLc5NsiU6+S9vHG5zmYdxsCNq3mwpZiL2IxqlB834zbgYUWdjo7oQeD5u1bz+MJZple6OTYx1cX2cm3YtiUtPxY9qxA15Oc0SV/n8XH1G92K6zHxoyBKWnxT+TJhL9esTdR+/J9pDLIzf6f+7oRDVeOEIWaRa3ZvVYb9Wq3aaU5sp2qD43tIlh9vzZlmLhhHyvnCbatn2cuvjx0WCjy2ubtt2DzdkD8ysLvjYr+r6X3ynbN+/cc0+6pRrlR74+KTbGIkfq1Ua9207XqLnj134xWxoXss2jhsneHo7yNOEUzcldRe3e5A4rp6+pWmIvO2F2xFDjm3zBKZpREyKKp/W2SFxzFpbGXY3hv7FE1/A3yNdWEbgfZPoNoRvaUUekhvDSXR/3DBYvre0x1jyMri4F0T3lEVAz7bisVnKxuAhX5vgEsd/r+hGpxLd0DN8V/qbqHvv6vRgBnWZVO/d20edh9n5hx553sfjgt9N0y/IpPc23or34Lq4HWp1vjnlt6c67CRbBHuXtDuUtH/dZSFsrXW3ug+D07mdMRLWuoo9vZcnGVNr9Rfvkzl/dVu+8RKPsayp75vcjnUj5KRrbt0IeDey96P3W8sKfjYRSWx+++R1BX7WRA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAM8n/AzsF8nY5OoVeAAAAAElFTkSuQmCC" alt="TDConnex Logo" class="h-12 sm:h-14 w-auto object-contain" />
+      </div>
+      <div class="text-[11px] font-bold tracking-[0.2em] text-slate-500 uppercase mb-5">Automation Downtime Report</div>
+      <div class="w-64 h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/70">
+        <div id="splash-bar" class="h-full rounded-full transition-all duration-300" style="width: 12%; background: linear-gradient(90deg, #EF4444, #F59E0B, #10B981, #2563EB);"></div>
+      </div>
+      <div id="splash-text" class="text-xs font-medium text-slate-500 mt-3">Loading TDConnex Workspace...</div>
+    </div>
+  </div>
+
+  <!-- Mobile Backdrop -->
+  <div id="sidebar-backdrop" class="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm hidden lg:hidden" onclick="toggleSidebar(false)"></div>
+
+  <div class="flex min-h-screen">
+    <!-- Clean White Sidebar with TDConnex Logo -->
+    <aside id="sidebar" class="sidebar-surface fixed inset-y-0 left-0 z-50 w-72 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-out">
+      <!-- Brand Header -->
+      <div class="px-5 pt-5 pb-4 border-b border-slate-200/80 flex items-center justify-between bg-white">
+        <div class="min-w-0">
+          <img src="data:image/png;base64,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" alt="TDConnex Logo" class="h-9 w-auto max-w-full object-contain" />
+          <div class="text-[10px] font-bold tracking-[0.14em] text-slate-500 uppercase mt-1.5">Automation Downtime Report</div>
+        </div>
+        <button type="button" onclick="toggleSidebar(false)" class="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100" aria-label="Close navigation">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Navigation List (12 Headings — Machines Removed) -->
+      <nav id="nav-list" class="flex-1 overflow-y-auto px-3 py-4 space-y-1"></nav>
+
+      <!-- User Profile Footer -->
+      <div class="p-4 border-t border-slate-200 bg-slate-50/80">
+        <div class="flex items-center gap-3 mb-3.5">
+          <div id="sidebar-initials" class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-700 to-indigo-700 flex items-center justify-center text-sm font-bold text-white shadow-md shrink-0">
+            VG
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-bold text-slate-900 truncate" id="sidebar-username">Venkatesh G</div>
+            <div class="inline-flex items-center gap-1.5 mt-0.5 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-[11px] font-semibold text-blue-700">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span id="sidebar-role">Admin</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="openPasswordModal()" class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700 transition">
+            <i data-lucide="key-round" class="w-3.5 h-3.5 text-blue-600"></i>
+            Password
+          </button>
+          <button type="button" onclick="openLogoutModal()" class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-xs font-semibold text-rose-700 transition">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            Logout
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Clean Light Workspace -->
+    <div class="flex-1 lg:pl-72 flex flex-col min-w-0">
+      <!-- Top Header (No global Log Downtime button on every page) -->
+      <header class="sticky top-0 z-30 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-6 py-3.5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="toggleSidebar(true)" class="lg:hidden p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200" aria-label="Open menu">
+              <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 id="page-title" class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+                <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Auto-Sync Active
+                </span>
+              </div>
+              <p id="page-subtitle" class="text-xs text-slate-500">Unit 1 &amp; Unit 2 • Executive Automation Overview</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <select id="global-unit-filter" onchange="setUnitFilter(this.value)" class="input-clean rounded-xl px-3 py-2 text-xs font-semibold cursor-pointer">
+              <option value="all">Unit 1 &amp; Unit 2</option>
+              <option value="Unit 1">Unit 1 Only</option>
+              <option value="Unit 2">Unit 2 Only</option>
+            </select>
+
+            <button type="button" onclick="navigateTo('notifications')" class="relative p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition" aria-label="Notifications">
+              <i data-lucide="bell" class="w-4 h-4"></i>
+              <span id="header-unread-badge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-[10px] font-bold text-white flex items-center justify-center shadow-sm">0</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Dynamic Page Content -->
+      <main id="main-content" class="flex-1 p-4 sm:p-6 max-w-[1600px] w-full mx-auto space-y-6"></main>
+    </div>
+  </div>
+
+  <!-- Real Login Screen (Shown when logged out) -->
+  <div id="login-screen" class="fixed inset-0 z-[70] hidden items-center justify-center p-4 bg-slate-50" style="background-image: radial-gradient(ellipse 55% 40% at 10% 0%, rgba(239, 68, 68, 0.08), transparent 60%), radial-gradient(ellipse 55% 45% at 92% 8%, rgba(30, 58, 138, 0.09), transparent 60%);">
+    <div class="w-full max-w-md bg-white rounded-3xl p-8 border border-slate-200 shadow-2xl">
+      <div class="text-center mb-6">
+        <img src="data:image/png;base64,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" alt="TDConnex Logo" class="h-10 w-auto mx-auto object-contain" />
+        <div class="text-[11px] font-bold tracking-[0.16em] text-slate-500 uppercase mt-2">Automation Downtime Report</div>
+        <h2 class="text-xl font-extrabold text-slate-900 mt-4">Sign In to Workspace</h2>
+        <p class="text-xs text-slate-500 mt-1">Enter your registered User Name and Password</p>
+      </div>
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5">User Name</label>
+          <input id="login-name" type="text" required placeholder="e.g. Venkatesh G" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm" />
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-semibold text-slate-700">Password</label>
+            <button type="button" onclick="toggleLoginPass()" id="login-pass-toggle" class="text-[11px] font-semibold text-blue-600 hover:text-blue-700">Show</button>
+          </div>
+          <input id="login-pass" type="password" required placeholder="Enter password" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm" />
+        </div>
+        <div id="login-error" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2"></div>
+        <button type="submit" class="btn-primary w-full py-3 rounded-xl text-sm font-bold text-white">Sign In</button>
+      </form>
+      <div class="mt-5 pt-4 border-t border-slate-100 text-center text-[11px] text-slate-500 space-y-1.5">
+        <div>Default Admin: <strong class="text-slate-700">Venkatesh G</strong> • Password: <strong class="font-mono text-slate-700">123456</strong></div>
+        <button type="button" onclick="resetAdminCreds()" class="text-blue-600 hover:underline font-semibold">Reset Default Admin Credentials</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Container -->
+  <div id="modal-overlay" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div id="modal-box" class="bg-white w-full max-w-lg rounded-2xl p-6 border border-slate-200 shadow-2xl max-h-[90vh] overflow-y-auto"></div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-[60] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <script>
+    // =========================================================================
+    // 1. NAVIGATION SCHEMA (12 Headings)
+    // =========================================================================
+    const NAV_ITEMS = [
+      { id: 'dashboard', label: 'Dashboard', icon: 'layout-grid', subtitle: 'Executive Downtime, Spare Consumption & OEE Overview' },
+      { id: 'downtime-entry', label: 'Downtime Entry', icon: 'plus-square', subtitle: 'Manual equipment & spare search with auto-inventory deduction' },
+      { id: 'downtime-records', label: 'Downtime Records', icon: 'list-checks', subtitle: 'Searchable historical downtime & spare usage ledger' },
+      { id: 'reports-analytics', label: 'Reports & Analytics', icon: 'bar-chart-3', subtitle: 'MTBF, MTTR, Availability & Unit Spare Cost Analytics' },
+      { id: 'pareto-analysis', label: 'Pareto Analysis', icon: 'trending-down', subtitle: '80/20 Vital Few root-cause & equipment impact breakdown' },
+      { id: 'preventive-maint', label: 'Preventive Maint.', icon: 'clipboard-check', subtitle: 'Scheduled PM checklists with verifier sign-off' },
+      { id: 'action-tracking', label: 'Action Tracking', icon: 'check-square', subtitle: 'Auto-linked CAPA & corrective engineering tasks' },
+      { id: 'spare-parts', label: 'Spare Parts', icon: 'package', subtitle: 'Unit 1 & Unit 2 separate spare inventory & live stock status' },
+      { id: 'kaizen', label: 'Kaizen', icon: 'lightbulb', subtitle: 'Full Before/After Kaizen proposals & Manager/Admin review' },
+      { id: 'notifications', label: 'Notifications', icon: 'bell', subtitle: 'Automated Red alerts, low-spare warnings & PM reminders' },
+      { id: 'user-management', label: 'User Management', icon: 'users', subtitle: 'Role-based access control for plant engineers & operators' },
+      { id: 'settings', label: 'Settings', icon: 'settings', subtitle: 'Plant thresholds, shift schedules & automation rules' },
+    ];
+
+    // =========================================================================
+    // 2. APPLICATION STATE
+    // =========================================================================
+    const DEFAULT_STATE = {
+      activeView: 'dashboard',
+      unitFilter: 'all',
+      periodFilter: 'Monthly',
+      dateChip: 'Nov 2026',
+      spareUnitTab: 'all',
+      spareStatusFilter: 'All',
+      recordSearch: '',
+      recordSeverityFilter: 'All',
+      actionFilter: 'All',
+      notifFilter: 'All',
+      paretoMode: 'category',
+      isLoggedIn: false,
+      user: { id: 'U-01', name: 'Venkatesh G', role: 'Admin', initials: 'VG' },
+      settings: {
+        plantName: 'TDConnex Precision Automation Plant',
+        targetAvailability: 96.5,
+        targetMttr: 25,
+        autoDeductSpare: true,
+        autoLowStockAlert: true,
+        autoCapaOnRed: true,
+      },
+      spareParts: [],
+      downtimeRecords: [],
+      pmSchedules: [],
+      actions: [],
+      kaizens: [],
+      notifications: [],
+      users: [
+        { id: 'U-01', name: 'Venkatesh G', password: '123456', role: 'Admin', unit: 'All Units', status: 'Active' },
+      ],
+    };
+
+    let state = loadState();
+    let chartInstances = {};
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem('td_connex_prod_v3');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    }
+
+    function saveState() {
+      try { localStorage.setItem('td_connex_prod_v3', JSON.stringify(state)); } catch (e) {}
+    }
+
+    // =========================================================================
+    // 3. HELPERS
+    // =========================================================================
+    function isAdmin() { return state.user && state.user.role === 'Admin'; }
+    function canManageOps() { return state.user && (state.user.role === 'Admin' || state.user.role === 'Engineer'); }
+
+    function getFilteredRecords() {
+      return state.downtimeRecords.filter(r => {
+        if (state.unitFilter !== 'all' && r.unit !== state.unitFilter) return false;
+        if (state.recordSeverityFilter !== 'All' && r.severity !== state.recordSeverityFilter) return false;
+        if (state.recordSearch) {
+          const q = state.recordSearch.toLowerCase();
+          if (!(r.id + r.equipment + r.category + r.rootCause + r.spareModel + r.technician).toLowerCase().includes(q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function getSpareStatus(sp) {
+      if (sp.stock <= 0) return { label: 'Out of Stock', cls: 'bg-rose-50 text-rose-700 border-rose-200', dot: 'bg-rose-500' };
+      if (sp.stock < sp.minStock) return { label: 'Low Stock', cls: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500' };
+      return { label: 'In Stock', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' };
+    }
+
+    function getUnreadCount() { return state.notifications.filter(n => !n.read).length; }
+    function getPendingActionsCount() {
+      return state.actions.filter(a => a.status !== 'Completed' && (state.unitFilter === 'all' || a.unit === state.unitFilter)).length;
+    }
+    function formatMins(mins) {
+      const h = Math.floor(mins / 60), m = mins % 60;
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+
+    function severityBadge(sev) {
+      if (sev === 'Red') return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Red</span>';
+      if (sev === 'Amber') return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Amber</span>';
+      return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Yellow</span>';
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const colors = {
+        success: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+        info: 'border-blue-200 bg-blue-50 text-blue-900',
+        warning: 'border-amber-200 bg-amber-50 text-amber-900',
+        error: 'border-rose-200 bg-rose-50 text-rose-900',
+      };
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-lg text-xs font-semibold transition-all duration-300 ${colors[type] || colors.info}`;
+      el.innerHTML = `<span class="flex-1">${message}</span>`;
+      container.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 250); }, 3400);
+    }
+
+    function destroyCharts() {
+      Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch (e) {} });
+      chartInstances = {};
+    }
+
+    // =========================================================================
+    // 4. SHELL & NAVIGATION
+    // =========================================================================
+    function toggleSidebar(open) {
+      const sb = document.getElementById('sidebar');
+      const bd = document.getElementById('sidebar-backdrop');
+      sb.classList.toggle('-translate-x-full', !open);
+      bd.classList.toggle('hidden', !open);
+    }
+
+    function navigateTo(viewId) {
+      state.activeView = viewId;
+      saveState();
+      toggleSidebar(false);
+      renderApp();
+    }
+
+    function setUnitFilter(val) { state.unitFilter = val; saveState(); renderApp(); }
+    function setPeriodFilter(val) { state.periodFilter = val; saveState(); renderApp(); }
+    function clearDateChip() { state.dateChip = state.dateChip ? '' : 'Nov 2026'; saveState(); renderApp(); }
+
+    function renderSidebar() {
+      const nav = document.getElementById('nav-list');
+      const unread = getUnreadCount();
+      const lowSpares = state.spareParts.filter(s => s.stock < s.minStock).length;
+      nav.innerHTML = NAV_ITEMS.map(item => {
+        const active = state.activeView === item.id;
+        let badge = '';
+        if (item.id === 'notifications' && unread > 0) {
+          badge = `<span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${active ? 'bg-white/25 text-white' : 'bg-rose-100 text-rose-700'}">${unread}</span>`;
+        } else if (item.id === 'spare-parts' && lowSpares > 0) {
+          badge = `<span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${active ? 'bg-white/25 text-white' : 'bg-amber-100 text-amber-700'}">${lowSpares}</span>`;
+        }
+        return `
+          <button type="button" onclick="navigateTo('${item.id}')"
+            class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 ${active ? 'nav-item-active' : 'nav-item-idle'}">
+            <i data-lucide="${item.icon}" class="w-4 h-4 shrink-0 ${active ? 'text-white' : 'text-slate-500'}"></i>
+            <span class="truncate">${item.label}</span>
+            ${badge}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderHeader() {
+      const current = NAV_ITEMS.find(n => n.id === state.activeView) || NAV_ITEMS[0];
+      document.getElementById('page-title').textContent = current.label;
+      document.getElementById('page-subtitle').textContent = `${state.unitFilter === 'all' ? 'Unit 1 & Unit 2' : state.unitFilter} • ${current.subtitle}`;
+      document.getElementById('global-unit-filter').value = state.unitFilter;
+      const badge = document.getElementById('header-unread-badge');
+      const unread = getUnreadCount();
+      badge.textContent = unread;
+      badge.classList.toggle('hidden', unread === 0);
+    }
+
+    // =========================================================================
+    // 5. VIEWS
+    // =========================================================================
+    function renderDashboard() {
+      const records = state.downtimeRecords.filter(r => state.unitFilter === 'all' || r.unit === state.unitFilter);
+      const spares = state.spareParts.filter(s => state.unitFilter === 'all' || s.unit === state.unitFilter);
+      const lowSpares = spares.filter(s => s.stock < s.minStock);
+      const totalMins = records.reduce((s, r) => s + r.durationMin, 0);
+      const totalSpareCost = records.reduce((s, r) => s + (r.spareCost || 0), 0);
+      const redCount = records.filter(r => r.severity === 'Red' && r.status !== 'Resolved').length;
+      const periods = ['Daily', 'Weekly', 'Monthly', 'Yearly', 'Custom'];
+
+      const periodBar = `
+        <div class="premium-card rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-1.5">
+            ${periods.map(p => `
+              <button type="button" onclick="setPeriodFilter('${p}')"
+                class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${state.periodFilter === p ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}">
+                ${p}
+              </button>
+            `).join('')}
+          </div>
+          <div class="flex items-center gap-2">
+            ${state.dateChip ? `
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-700">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${state.dateChip}
+                <button type="button" onclick="clearDateChip()" class="ml-1 hover:text-blue-950" aria-label="Clear date"><i data-lucide="x" class="w-3 h-3"></i></button>
+              </span>
+            ` : `<button type="button" onclick="clearDateChip()" class="px-3 py-1.5 rounded-xl bg-slate-100 text-xs font-semibold text-slate-600">+ Nov 2026</button>`}
+          </div>
+        </div>
+      `;
+
+      const kpis = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="premium-card premium-card-hover rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Red Breakdowns</span>
+              <button type="button" onclick="state.recordSeverityFilter='Red'; navigateTo('downtime-records')" class="text-xs font-semibold text-blue-600 hover:text-blue-700">View all</button>
+            </div>
+            <div class="flex items-end justify-between">
+              <div>
+                <div class="text-3xl font-extrabold text-slate-900 tabular-nums">${redCount}</div>
+                <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">
+                  <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> Red Critical
+                </div>
+              </div>
+              <div class="w-11 h-11 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600"><i data-lucide="alert-octagon" class="w-5 h-5"></i></div>
+            </div>
+          </div>
+
+          <div class="premium-card premium-card-hover rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Low / Out-of-Stock Spares</span>
+              <button type="button" onclick="navigateTo('spare-parts')" class="text-xs font-semibold text-blue-600 hover:text-blue-700">Check Store</button>
+            </div>
+            <div class="flex items-end justify-between">
+              <div>
+                <div class="text-3xl font-extrabold text-slate-900 tabular-nums">${lowSpares.length}</div>
+                <div class="mt-2 text-xs font-semibold text-amber-700">Auto-tracked across Unit 1 &amp; 2</div>
+              </div>
+              <div class="w-11 h-11 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600"><i data-lucide="package-search" class="w-5 h-5"></i></div>
+            </div>
+          </div>
+
+          <div class="premium-card premium-card-hover rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending Actions</span>
+              <button type="button" onclick="navigateTo('action-tracking')" class="text-xs font-semibold text-blue-600 hover:text-blue-700">View all</button>
+            </div>
+            <div class="flex items-end justify-between">
+              <div>
+                <div class="text-3xl font-extrabold text-slate-900 tabular-nums">${getPendingActionsCount()}</div>
+                <div class="mt-2 text-xs font-semibold text-indigo-700">Open CAPA Engineering Tasks</div>
+              </div>
+              <div class="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600"><i data-lucide="clipboard-list" class="w-5 h-5"></i></div>
+            </div>
+          </div>
+
+          <div class="premium-card premium-card-hover rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Downtime &amp; Spare Cost</span>
+              <button type="button" onclick="navigateTo('reports-analytics')" class="text-xs font-semibold text-blue-600 hover:text-blue-700">Analytics</button>
+            </div>
+            <div class="flex items-end justify-between">
+              <div>
+                <div class="text-2xl font-extrabold text-slate-900 tabular-nums">${formatMins(totalMins)} <span class="text-sm font-semibold text-slate-500">• ₹${totalSpareCost.toLocaleString('en-IN')}</span></div>
+                <div class="mt-2 text-xs font-semibold text-emerald-700">Availability: ${(100 - (totalMins / (30 * 24 * 60) * 100)).toFixed(2)}%</div>
+              </div>
+              <div class="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600"><i data-lucide="activity" class="w-5 h-5"></i></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const charts = `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="premium-card rounded-2xl p-5 lg:col-span-2">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="text-sm font-bold text-slate-900">Downtime Trend (${state.periodFilter})</h2>
+                <p class="text-xs text-slate-500">Lost minutes vs. target threshold</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-mono font-semibold text-slate-700">${state.unitFilter === 'all' ? 'U1 + U2' : state.unitFilter}</span>
+            </div>
+            <div class="relative h-72"><canvas id="dashTrendChart"></canvas></div>
+          </div>
+          <div class="premium-card rounded-2xl p-5">
+            <div class="mb-4">
+              <h2 class="text-sm font-bold text-slate-900">Downtime by Category</h2>
+              <p class="text-xs text-slate-500">Root-cause distribution (minutes)</p>
+            </div>
+            <div class="relative h-72"><canvas id="dashCategoryChart"></canvas></div>
+          </div>
+        </div>
+      `;
+
+      const recentTable = `
+        <div class="premium-card rounded-2xl p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 class="text-sm font-bold text-slate-900">Recent Breakdowns &amp; Spare Consumption</h2>
+              <p class="text-xs text-slate-500">Live synced with Unit 1 &amp; Unit 2 Spare Parts stores</p>
+            </div>
+            <button type="button" onclick="navigateTo('downtime-records')" class="text-xs font-semibold text-blue-600 hover:text-blue-700">View Full Ledger &rarr;</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px]">
+                  <th class="py-3 pr-4">ID</th>
+                  <th class="py-3 pr-4">Unit &amp; Equipment</th>
+                  <th class="py-3 pr-4">Severity</th>
+                  <th class="py-3 pr-4">Duration</th>
+                  <th class="py-3 pr-4">Spare Consumed</th>
+                  <th class="py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${records.slice(0, 5).map(r => `
+                  <tr class="hover:bg-slate-50 transition cursor-pointer" onclick="openRecordModal('${r.id}')">
+                    <td class="py-3 pr-4 font-mono text-blue-600 font-semibold">${r.id}</td>
+                    <td class="py-3 pr-4 font-semibold text-slate-900">${r.unit} <span class="font-normal text-slate-500">• ${r.equipment}</span></td>
+                    <td class="py-3 pr-4">${severityBadge(r.severity)}</td>
+                    <td class="py-3 pr-4 font-mono text-slate-700">${r.durationMin}m</td>
+                    <td class="py-3 pr-4 text-slate-700">${r.spareQty > 0 ? `<span class="font-semibold text-indigo-700">${r.spareQty}x ${r.spareModel}</span>` : '<span class="text-slate-400">None</span>'}</td>
+                    <td class="py-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${r.status === 'Resolved' ? 'bg-emerald-50 text-emerald-700' : r.status === 'In Progress' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}">${r.status}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      return periodBar + kpis + charts + recentTable;
+    }
+
+    function initDashboardCharts() {
+      const records = state.downtimeRecords.filter(r => state.unitFilter === 'all' || r.unit === state.unitFilter);
+      const trendCtx = document.getElementById('dashTrendChart');
+      const catCtx = document.getElementById('dashCategoryChart');
+      if (!trendCtx || !catCtx) return;
+
+      const labels = state.periodFilter === 'Daily' ? ['06:00', '10:00', '14:00', '18:00', '22:00', '02:00']
+        : state.periodFilter === 'Weekly' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        : ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
+      const totalMin = records.reduce((s, r) => s + r.durationMin, 0);
+      const baseData = labels.map((_, idx) => (idx === labels.length - 1 ? totalMin : 0));
+
+      chartInstances.dashTrend = new Chart(trendCtx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Downtime (min)', data: baseData, backgroundColor: 'rgba(37, 99, 235, 0.82)', borderRadius: 8 },
+            { label: 'Target Limit (min)', data: labels.map(() => 45), type: 'line', borderColor: '#E11D48', borderDash: [5, 5], pointRadius: 0, tension: 0.3 },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#475569', font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } },
+            y: { ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } },
+          },
+        },
+      });
+
+      const catTotals = {};
+      records.forEach(r => { catTotals[r.category] = (catTotals[r.category] || 0) + r.durationMin; });
+      const catLabels = Object.keys(catTotals);
+      chartInstances.dashCat = new Chart(catCtx, {
+        type: 'doughnut',
+        data: {
+          labels: catLabels.length ? catLabels : ['No Downtime Logged'],
+          datasets: [{ data: catLabels.length ? Object.values(catTotals) : [1], backgroundColor: catLabels.length ? ['#2563EB', '#E11D48', '#D97706', '#7C3AED', '#059669', '#0891B2'] : ['#E2E8F0'], borderColor: '#FFFFFF', borderWidth: 3 }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '66%',
+          plugins: { legend: { position: 'bottom', labels: { color: '#475569', padding: 14, font: { size: 11 } } } },
+        },
+      });
+    }
+
+    function renderDowntimeEntry() {
+      const defaultUnit = state.unitFilter === 'Unit 2' ? 'Unit 2' : 'Unit 1';
+      return `
+        <div class="max-w-3xl mx-auto premium-card rounded-2xl p-6">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-200">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Smart Automation Downtime Entry</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Enter Equipment &amp; Spare Model manually — available unit spares appear in dropdown</p>
+            </div>
+            <button type="button" onclick="quickFillDowntime()" class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-semibold text-blue-700">
+              Quick Fill Sample
+            </button>
+          </div>
+
+          <form id="downtime-form" onsubmit="submitDowntimeEntry(event)" class="space-y-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Plant Unit (Separates Spares)</label>
+                <select id="dt-unit" onchange="onEntryUnitChange()" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm font-semibold">
+                  <option value="Unit 1" ${defaultUnit === 'Unit 1' ? 'selected' : ''}>Unit 1</option>
+                  <option value="Unit 2" ${defaultUnit === 'Unit 2' ? 'selected' : ''}>Unit 2</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Equipment / Machine Name (Manual Entry)</label>
+                <input id="dt-equip" type="text" required placeholder="e.g. ROB-U1-04 / CNC-U1-01" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Date</label>
+                <input id="dt-date" type="date" required value="2026-11-25" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Shift</label>
+                <select id="dt-shift" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm">
+                  <option>Shift A</option><option>Shift B</option><option>Shift C</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Start Time (Auto-Calculates Duration)</label>
+                <input id="dt-start" type="time" value="09:15" oninput="autoCalcDuration()" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm font-mono" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">End Time</label>
+                <input id="dt-end" type="time" value="09:55" oninput="autoCalcDuration()" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm font-mono" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Duration (Minutes)</label>
+                <input id="dt-duration" type="number" min="1" max="1440" required value="40" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold text-blue-700" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Category</label>
+                <select id="dt-category" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm">
+                  <option>PLC / Automation</option><option>Mechanical</option><option>Electrical</option><option>Pneumatic</option><option>Sensor / Vision</option><option>Tooling</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Severity</label>
+                <select id="dt-severity" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm">
+                  <option value="Red">Red — Critical Stoppage</option>
+                  <option value="Amber">Amber — Major Delay</option>
+                  <option value="Yellow">Yellow — Minor Micro-stop</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Assigned Technician</label>
+                <input id="dt-tech" type="text" required placeholder="e.g. Karthik R." class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm" />
+              </div>
+            </div>
+
+            <!-- Manual Spare Search + Dropdown & Auto-Inventory Deduction -->
+            <div class="rounded-2xl p-4 bg-blue-50/70 border border-blue-200 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="package-minus" class="w-4 h-4 text-blue-600"></i>
+                  <span class="text-xs font-bold uppercase tracking-wider text-blue-900">Spare Usage &amp; Auto-Inventory Deduction</span>
+                </div>
+                <span id="dt-spare-live-badge" class="text-xs font-semibold text-slate-600">Type spare model or SKU</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="sm:col-span-2 relative">
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Spare Model / SKU (Manual Search)</label>
+                  <input id="dt-spare-search" type="text" autocomplete="off" oninput="onSpareSearchInput()" onfocus="onSpareSearchInput()" placeholder="Type spare model or SKU (e.g. Profinet, Bearing)..." class="input-clean w-full rounded-xl px-3 py-2 text-xs font-medium" />
+                  <input id="dt-spare-sku" type="hidden" value="" />
+                  <div id="dt-spare-dropdown" class="hidden absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-44 overflow-y-auto text-xs"></div>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Consumables Qty Used</label>
+                  <input id="dt-spare-qty" type="number" min="0" value="0" oninput="updateSpareLivePreview()" class="input-clean w-full rounded-xl px-3 py-2 text-xs font-mono font-bold" />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">Problem Description</label>
+              <textarea id="dt-problem" rows="2" required placeholder="Describe what happened on the machine / operator observation..." class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm"></textarea>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Root Cause Description</label>
+                <textarea id="dt-cause" rows="2" required placeholder="Describe fault code, alarm, or failure..." class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm"></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Corrective Action Taken</label>
+                <textarea id="dt-action" rows="2" required placeholder="Describe repair steps..." class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm"></textarea>
+              </div>
+            </div>
+            <div class="rounded-2xl p-4 bg-slate-50 border border-slate-200">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <label class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <i data-lucide="camera" class="w-4 h-4 text-blue-600"></i>
+                  Down Reason Image <span class="text-slate-400 font-normal">(Optional — Technician Photo Proof)</span>
+                </label>
+                <button type="button" id="dt-img-clear" onclick="clearEntryImage()" class="hidden text-xs font-semibold text-rose-600 hover:text-rose-700">Remove Photo</button>
+              </div>
+              <input id="dt-image-file" type="file" accept="image/*" onchange="handleImageUpload(this, 'dt-image-data', 'dt-image-preview', 'dt-img-clear')" class="block w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+              <input id="dt-image-data" type="hidden" value="" />
+              <div id="dt-image-preview" class="hidden mt-3"></div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200">
+              <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+                <input id="dt-auto-capa" type="checkbox" checked class="w-4 h-4 accent-blue-600" />
+                <span>Auto-create CAPA Action on Red severity <span class="text-slate-400 font-normal">(adds task in Action Tracking)</span></span>
+              </label>
+              <div class="flex items-center gap-2">
+                <button type="reset" onclick="setTimeout(onEntryUnitChange, 10)" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700">Reset</button>
+                <button type="submit" class="btn-primary px-5 py-2.5 rounded-xl text-xs font-semibold text-white inline-flex items-center gap-2">
+                  <i data-lucide="zap" class="w-4 h-4"></i> Submit &amp; Auto-Update Spares
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      `;
+    }
+
+    function onEntryUnitChange() {
+      const spSearch = document.getElementById('dt-spare-search');
+      const spSku = document.getElementById('dt-spare-sku');
+      const dd = document.getElementById('dt-spare-dropdown');
+      if (spSearch) spSearch.value = '';
+      if (spSku) spSku.value = '';
+      if (dd) dd.classList.add('hidden');
+      updateSpareLivePreview();
+    }
+
+    function onSpareSearchInput() {
+      const unit = document.getElementById('dt-unit')?.value || 'Unit 1';
+      const q = (document.getElementById('dt-spare-search')?.value || '').trim().toLowerCase();
+      const dd = document.getElementById('dt-spare-dropdown');
+      const hiddenSku = document.getElementById('dt-spare-sku');
+      if (!dd || !hiddenSku) return;
+
+      if (!q) {
+        hiddenSku.value = '';
+        dd.classList.add('hidden');
+        updateSpareLivePreview();
+        return;
+      }
+
+      const unitSpares = state.spareParts.filter(sp => sp.unit === unit);
+      const matches = unitSpares.filter(sp => (sp.model + ' ' + sp.sku).toLowerCase().includes(q));
+      const exact = unitSpares.find(sp => sp.sku.toLowerCase() === q || sp.model.toLowerCase() === q);
+      hiddenSku.value = exact ? exact.sku : '';
+
+      if (matches.length === 0) {
+        dd.innerHTML = `<div class="px-3.5 py-2.5 text-rose-600 font-semibold flex items-center gap-2"><i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i> Spare part not available in spare list (${unit})</div>`;
+      } else {
+        dd.innerHTML = matches.map(sp => {
+          const st = getSpareStatus(sp);
+          return `
+            <button type="button" onclick="selectSpareOption('${sp.sku}')" class="w-full text-left px-3.5 py-2 hover:bg-blue-50 flex items-center justify-between gap-2 border-b border-slate-100 last:border-0">
+              <div>
+                <div class="font-semibold text-slate-900">${sp.model}</div>
+                <div class="text-[11px] font-mono text-slate-500">${sp.sku} • Avail: ${sp.stock}</div>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${st.cls}">${st.label}</span>
+            </button>
+          `;
+        }).join('');
+      }
+      dd.classList.remove('hidden');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      updateSpareLivePreview();
+    }
+
+    function selectSpareOption(sku) {
+      const unit = document.getElementById('dt-unit')?.value || 'Unit 1';
+      const sp = state.spareParts.find(x => x.sku === sku && x.unit === unit);
+      if (!sp) return;
+      document.getElementById('dt-spare-search').value = `${sp.model} (${sp.sku})`;
+      document.getElementById('dt-spare-sku').value = sp.sku;
+      document.getElementById('dt-spare-dropdown').classList.add('hidden');
+      if ((parseInt(document.getElementById('dt-spare-qty').value, 10) || 0) === 0) {
+        document.getElementById('dt-spare-qty').value = 1;
+      }
+      updateSpareLivePreview();
+    }
+
+    function autoCalcDuration() {
+      const s = document.getElementById('dt-start')?.value;
+      const e = document.getElementById('dt-end')?.value;
+      const d = document.getElementById('dt-duration');
+      if (!s || !e || !d) return;
+      const [sh, sm] = s.split(':').map(Number);
+      const [eh, em] = e.split(':').map(Number);
+      let diff = (eh * 60 + em) - (sh * 60 + sm);
+      if (diff <= 0) diff += 24 * 60;
+      d.value = diff;
+    }
+
+    function updateSpareLivePreview() {
+      const sku = document.getElementById('dt-spare-sku')?.value;
+      const typed = (document.getElementById('dt-spare-search')?.value || '').trim();
+      const qtyInput = document.getElementById('dt-spare-qty');
+      const badge = document.getElementById('dt-spare-live-badge');
+      if (!badge || !qtyInput) return;
+      if (!sku) {
+        badge.innerHTML = typed
+          ? '<span class="text-rose-600 font-semibold">Spare part not available in spare list</span>'
+          : '<span class="text-slate-500">Type spare model or SKU</span>';
+        return;
+      }
+      const sp = state.spareParts.find(x => x.sku === sku);
+      const qty = parseInt(qtyInput.value, 10) || 0;
+      if (!sp) return;
+      const remaining = Math.max(0, sp.stock - qty);
+      const st = getSpareStatus({ ...sp, stock: remaining });
+      badge.innerHTML = `After deduction: <strong class="font-mono text-slate-900">${remaining}</strong> left <span class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${st.cls}">${st.label}</span>`;
+    }
+
+    function renderDowntimeRecords() {
+      const records = getFilteredRecords();
+      const totalMins = records.reduce((s, r) => s + r.durationMin, 0);
+      return `
+        <div class="premium-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2.5 flex-1">
+            <div class="relative flex-1 min-w-[200px] max-w-sm">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input type="text" value="${state.recordSearch}" oninput="state.recordSearch=this.value; renderApp()" placeholder="Search ID, equipment, spare model..." class="input-clean w-full rounded-xl pl-9 pr-3 py-2 text-xs" />
+            </div>
+            <select onchange="state.recordSeverityFilter=this.value; renderApp()" class="input-clean rounded-xl px-3 py-2 text-xs font-medium">
+              <option value="All" ${state.recordSeverityFilter === 'All' ? 'selected' : ''}>All Severities</option>
+              <option value="Red" ${state.recordSeverityFilter === 'Red' ? 'selected' : ''}>Red Only</option>
+              <option value="Amber" ${state.recordSeverityFilter === 'Amber' ? 'selected' : ''}>Amber Only</option>
+              <option value="Yellow" ${state.recordSeverityFilter === 'Yellow' ? 'selected' : ''}>Yellow Only</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500 font-mono font-semibold">${records.length} records • ${formatMins(totalMins)}</span>
+            <button type="button" onclick="exportRecordsCSV()" class="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-semibold text-emerald-700 inline-flex items-center gap-1.5">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Export CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="premium-card rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th class="py-3.5 px-4">ID</th>
+                  <th class="py-3.5 px-4">Date &amp; Unit</th>
+                  <th class="py-3.5 px-4">Equipment</th>
+                  <th class="py-3.5 px-4">Severity</th>
+                  <th class="py-3.5 px-4">Duration</th>
+                  <th class="py-3.5 px-4">Spare Used</th>
+                  <th class="py-3.5 px-4">Status</th>
+                  <th class="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${records.length ? records.map(r => `
+                  <tr class="hover:bg-slate-50/80 transition">
+                    <td class="py-3 px-4 font-mono text-blue-600 font-semibold">${r.id}</td>
+                    <td class="py-3 px-4 text-slate-700">${r.date} <span class="font-semibold text-slate-900">• ${r.unit}</span></td>
+                    <td class="py-3 px-4 font-medium text-slate-900">${r.equipment}</td>
+                    <td class="py-3 px-4">${severityBadge(r.severity)}</td>
+                    <td class="py-3 px-4 font-mono text-slate-800">${r.durationMin}m</td>
+                    <td class="py-3 px-4 text-slate-700">${r.spareQty > 0 ? `<span class="font-semibold text-indigo-700">${r.spareQty}x ${r.spareModel}</span>` : '<span class="text-slate-400">—</span>'}</td>
+                    <td class="py-3 px-4">
+                      ${canManageOps() ? `<button type="button" onclick="toggleRecordStatus('${r.id}')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold ${r.status === 'Resolved' ? 'bg-emerald-50 text-emerald-700' : r.status === 'In Progress' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}">${r.status}</button>` : `<span class="px-2.5 py-1 rounded-lg text-[11px] font-semibold ${r.status === 'Resolved' ? 'bg-emerald-50 text-emerald-700' : r.status === 'In Progress' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}">${r.status}</span>`}
+                    </td>
+                    <td class="py-3 px-4 text-right space-x-1">
+                      <button type="button" onclick="openRecordModal('${r.id}')" class="p-1.5 rounded-lg hover:bg-slate-100 text-blue-600" title="View"><i data-lucide="eye" class="w-3.5 h-3.5"></i></button>
+                      ${isAdmin() ? `<button type="button" onclick="deleteRecord('${r.id}')" class="p-1.5 rounded-lg hover:bg-rose-50 text-rose-600" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ''}
+                    </td>
+                  </tr>
+                `).join('') : `<tr><td colspan="8" class="py-10 text-center text-slate-400">No records match your filters.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderReportsAnalytics() {
+      const records = state.downtimeRecords.filter(r => state.unitFilter === 'all' || r.unit === state.unitFilter);
+      const totalMins = records.reduce((s, r) => s + r.durationMin, 0);
+      const u1Cost = state.downtimeRecords.filter(r => r.unit === 'Unit 1').reduce((s, r) => s + (r.spareCost || 0), 0);
+      const u2Cost = state.downtimeRecords.filter(r => r.unit === 'Unit 2').reduce((s, r) => s + (r.spareCost || 0), 0);
+      const mttr = records.length ? (totalMins / records.length).toFixed(1) : '0.0';
+      const availability = (100 - (totalMins / (30 * 24 * 60) * 100)).toFixed(2);
+      return `
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="premium-card rounded-2xl p-5">
+            <div class="text-xs font-semibold uppercase text-slate-500">Plant Availability</div>
+            <div class="text-3xl font-extrabold text-emerald-600 mt-2 tabular-nums">${availability}%</div>
+            <div class="text-xs text-slate-500 mt-1">Target: ${state.settings.targetAvailability}%</div>
+          </div>
+          <div class="premium-card rounded-2xl p-5">
+            <div class="text-xs font-semibold uppercase text-slate-500">MTTR</div>
+            <div class="text-3xl font-extrabold text-blue-600 mt-2 tabular-nums">${mttr} min</div>
+            <div class="text-xs text-slate-500 mt-1">Target: &le; ${state.settings.targetMttr} min</div>
+          </div>
+          <div class="premium-card rounded-2xl p-5">
+            <div class="text-xs font-semibold uppercase text-slate-500">Unit 1 Spare Cost</div>
+            <div class="text-3xl font-extrabold text-indigo-600 mt-2 tabular-nums">₹${u1Cost.toLocaleString('en-IN')}</div>
+            <div class="text-xs text-slate-500 mt-1">Auto-summed from consumables</div>
+          </div>
+          <div class="premium-card rounded-2xl p-5">
+            <div class="text-xs font-semibold uppercase text-slate-500">Unit 2 Spare Cost</div>
+            <div class="text-3xl font-extrabold text-violet-600 mt-2 tabular-nums">₹${u2Cost.toLocaleString('en-IN')}</div>
+            <div class="text-xs text-slate-500 mt-1">Auto-summed from consumables</div>
+          </div>
+        </div>
+        <div class="premium-card rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div><h2 class="text-sm font-bold text-slate-900">Unit 1 vs Unit 2 Downtime Comparison</h2><p class="text-xs text-slate-500">Monthly lost production minutes</p></div>
+            <button type="button" onclick="exportRecordsCSV()" class="px-3.5 py-2 rounded-xl bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-700">Export CSV</button>
+          </div>
+          <div class="relative h-80"><canvas id="reportsChart"></canvas></div>
+        </div>
+      `;
+    }
+
+    function initReportsChart() {
+      const ctx = document.getElementById('reportsChart');
+      if (!ctx) return;
+      chartInstances.reports = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+          datasets: [
+            { label: 'Unit 1 (min)', data: [0, 0, 0, 0, 0, state.downtimeRecords.filter(r => r.unit === 'Unit 1').reduce((a, b) => a + b.durationMin, 0)], backgroundColor: 'rgba(37, 99, 235, 0.82)', borderRadius: 6 },
+            { label: 'Unit 2 (min)', data: [0, 0, 0, 0, 0, state.downtimeRecords.filter(r => r.unit === 'Unit 2').reduce((a, b) => a + b.durationMin, 0)], backgroundColor: 'rgba(99, 102, 241, 0.78)', borderRadius: 6 },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#475569' } } },
+          scales: { x: { ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } }, y: { ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } } },
+        },
+      });
+    }
+
+    function getParetoData() {
+      const records = state.downtimeRecords.filter(r => state.unitFilter === 'all' || r.unit === state.unitFilter);
+      const map = {};
+      records.forEach(r => {
+        const key = state.paretoMode === 'category' ? r.category : r.equipment;
+        if (!map[key]) map[key] = { label: key, mins: 0, count: 0 };
+        map[key].mins += r.durationMin;
+        map[key].count += 1;
+      });
+      const sorted = Object.values(map).sort((a, b) => b.mins - a.mins);
+      const total = sorted.reduce((s, x) => s + x.mins, 0) || 1;
+      let cum = 0;
+      return sorted.map(x => { cum += x.mins; return { ...x, pct: (x.mins / total * 100).toFixed(1), cumPct: (cum / total * 100).toFixed(1) }; });
+    }
+
+    function renderParetoAnalysis() {
+      const rows = getParetoData();
+      return `
+        <div class="premium-card rounded-2xl p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div><h2 class="text-sm font-bold text-slate-900">80/20 Pareto Root-Cause Analysis</h2><p class="text-xs text-slate-500">Vital few causes driving 80% of downtime</p></div>
+            <div class="flex gap-1 bg-slate-100 p-1 rounded-xl">
+              <button type="button" onclick="state.paretoMode='category'; renderApp()" class="px-3 py-1.5 rounded-lg text-xs font-semibold ${state.paretoMode === 'category' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'}">By Category</button>
+              <button type="button" onclick="state.paretoMode='equipment'; renderApp()" class="px-3 py-1.5 rounded-lg text-xs font-semibold ${state.paretoMode === 'equipment' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'}">By Equipment</button>
+            </div>
+          </div>
+          <div class="relative h-80"><canvas id="paretoChart"></canvas></div>
+        </div>
+        <div class="premium-card rounded-2xl overflow-hidden">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px]">
+              <tr><th class="py-3 px-4">Item</th><th class="py-3 px-4">Events</th><th class="py-3 px-4">Lost Time</th><th class="py-3 px-4">Share %</th><th class="py-3 px-4">Cumulative %</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${rows.map(r => `<tr><td class="py-3 px-4 font-semibold text-slate-900">${r.label}</td><td class="py-3 px-4 font-mono">${r.count}</td><td class="py-3 px-4 font-mono text-blue-600 font-semibold">${r.mins}m</td><td class="py-3 px-4 font-mono">${r.pct}%</td><td class="py-3 px-4 font-mono text-amber-700 font-semibold">${r.cumPct}%</td></tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function initParetoChart() {
+      const ctx = document.getElementById('paretoChart');
+      if (!ctx) return;
+      const rows = getParetoData();
+      chartInstances.pareto = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: rows.map(r => r.label),
+          datasets: [
+            { label: 'Downtime (min)', data: rows.map(r => r.mins), backgroundColor: 'rgba(37, 99, 235, 0.8)', borderRadius: 6, yAxisID: 'y' },
+            { label: 'Cumulative %', data: rows.map(r => parseFloat(r.cumPct)), type: 'line', borderColor: '#D97706', backgroundColor: '#D97706', tension: 0.25, yAxisID: 'y1' },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#475569' } } },
+          scales: {
+            x: { ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } },
+            y: { position: 'left', ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } },
+            y1: { position: 'right', min: 0, max: 100, ticks: { color: '#D97706', callback: v => v + '%' }, grid: { drawOnChartArea: false } },
+          },
+        },
+      });
+    }
+
+    function renderPreventiveMaint() {
+      return `
+        <div class="premium-card rounded-2xl p-4 flex items-center justify-between">
+          <div class="text-xs font-medium text-slate-600">Scheduled Preventive Maintenance Tasks (${state.pmSchedules.length})</div>
+          ${canManageOps() ? `<button type="button" onclick="openAddPmModal()" class="btn-primary px-3.5 py-2 rounded-xl text-xs font-semibold text-white inline-flex items-center gap-1.5"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Schedule PM</button>` : `<span class="text-xs font-semibold text-slate-400">Technician: Mark Done Only</span>`}
+        </div>
+        <div class="premium-card rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px]">
+                <tr><th class="py-3.5 px-4">ID</th><th class="py-3.5 px-4">Unit &amp; Equipment</th><th class="py-3.5 px-4">Task</th><th class="py-3.5 px-4">Due</th><th class="py-3.5 px-4">Status</th><th class="py-3.5 px-4 text-right">Verified By / Action</th></tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${state.pmSchedules.map(pm => `
+                  <tr>
+                    <td class="py-3 px-4 font-mono text-blue-600 font-semibold">${pm.id}</td>
+                    <td class="py-3 px-4 font-semibold text-slate-900">${pm.unit} • ${pm.equipment}</td>
+                    <td class="py-3 px-4 text-slate-700">${pm.task}</td>
+                    <td class="py-3 px-4 font-mono text-slate-600">${pm.dueDate}</td>
+                    <td class="py-3 px-4"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${pm.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' : pm.status === 'Overdue' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'}">${pm.status}</span></td>
+                    <td class="py-3 px-4 text-right">${pm.status !== 'Completed' ? `<button type="button" onclick="completePm('${pm.id}')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold">Mark Done</button>` : `<span class="text-emerald-700 font-semibold">Verified by ${pm.verifiedBy || pm.owner}</span>`}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderActionTracking() {
+      const actions = state.actions.filter(a => (state.unitFilter === 'all' || a.unit === state.unitFilter) && (state.actionFilter === 'All' || a.status === state.actionFilter));
+      return `
+        <div class="premium-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap gap-1.5">
+            ${['All', 'Pending', 'In Progress', 'Completed'].map(st => `<button type="button" onclick="state.actionFilter='${st}'; renderApp()" class="px-3 py-1.5 rounded-xl text-xs font-semibold ${state.actionFilter === st ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}">${st}</button>`).join('')}
+          </div>
+          ${canManageOps() ? `<button type="button" onclick="openAddActionModal()" class="btn-primary px-3.5 py-2 rounded-xl text-xs font-semibold text-white inline-flex items-center gap-1.5"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Action</button>` : ''}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${actions.map(a => `
+            <div class="premium-card rounded-2xl p-5 flex flex-col justify-between gap-4">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-mono text-xs text-blue-600 font-semibold">${a.id} • ${a.unit}</span>
+                  <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold ${a.priority === 'High' ? 'bg-rose-50 text-rose-700' : a.priority === 'Medium' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}">${a.priority}</span>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">${a.title}</h3>
+                <p class="text-xs text-slate-500 mt-1">Owner: ${a.owner} • Due: ${a.due}</p>
+              </div>
+              <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                <span class="px-2.5 py-1 rounded-lg text-[11px] font-semibold ${a.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' : a.status === 'In Progress' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}">${a.status}</span>
+                ${canManageOps() ? `<button type="button" onclick="cycleActionStatus('${a.id}')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700">Advance Status</button>` : `<span class="text-[11px] text-slate-400">View Only</span>`}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderSpareParts() {
+      const effectiveUnit = state.unitFilter !== 'all' ? state.unitFilter : state.spareUnitTab;
+      const spares = state.spareParts.filter(sp => {
+        if (effectiveUnit !== 'all' && sp.unit !== effectiveUnit) return false;
+        const st = getSpareStatus(sp).label;
+        if (state.spareStatusFilter !== 'All' && st !== state.spareStatusFilter) return false;
+        return true;
+      });
+      return `
+        <div class="premium-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex bg-slate-100 p-1 rounded-xl">
+              ${[['all', 'All Units'], ['Unit 1', 'Unit 1 Store'], ['Unit 2', 'Unit 2 Store']].map(([val, lbl]) => `
+                <button type="button" onclick="state.spareUnitTab='${val}'; renderApp()" class="px-3 py-1.5 rounded-lg text-xs font-semibold ${state.spareUnitTab === val ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'}">${lbl}</button>
+              `).join('')}
+            </div>
+            <select onchange="state.spareStatusFilter=this.value; renderApp()" class="input-clean rounded-xl px-3 py-1.5 text-xs font-medium">
+              <option value="All" ${state.spareStatusFilter === 'All' ? 'selected' : ''}>All Statuses</option>
+              <option value="In Stock" ${state.spareStatusFilter === 'In Stock' ? 'selected' : ''}>In Stock</option>
+              <option value="Low Stock" ${state.spareStatusFilter === 'Low Stock' ? 'selected' : ''}>Low Stock</option>
+              <option value="Out of Stock" ${state.spareStatusFilter === 'Out of Stock' ? 'selected' : ''}>Out of Stock</option>
+            </select>
+          </div>
+          ${canManageOps() ? `<button type="button" onclick="openAddSpareModal()" class="btn-primary px-3.5 py-2 rounded-xl text-xs font-semibold text-white inline-flex items-center gap-1.5"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Unit Spare</button>` : `<span class="text-xs font-semibold text-slate-400">View Only (Auto-deducts on Entry)</span>`}
+        </div>
+
+        <div class="premium-card rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px]">
+                <tr>
+                  <th class="py-3.5 px-4">SKU</th>
+                  <th class="py-3.5 px-4">Store Unit</th>
+                  <th class="py-3.5 px-4">Spare Model</th>
+                  <th class="py-3.5 px-4">Current / Min</th>
+                  <th class="py-3.5 px-4">Unit Cost</th>
+                  <th class="py-3.5 px-4">Status</th>
+                  <th class="py-3.5 px-4 text-right">Quick Stock</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${spares.map(sp => {
+                  const st = getSpareStatus(sp);
+                  return `
+                    <tr class="hover:bg-slate-50/80">
+                      <td class="py-3 px-4 font-mono text-blue-600 font-semibold">${sp.sku}</td>
+                      <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-md text-[11px] font-bold ${sp.unit === 'Unit 1' ? 'bg-blue-50 text-blue-700' : 'bg-indigo-50 text-indigo-700'}">${sp.unit}</span></td>
+                      <td class="py-3 px-4 font-semibold text-slate-900">${sp.model} <div class="text-[11px] font-normal text-slate-500">${sp.category}</div></td>
+                      <td class="py-3 px-4 font-mono font-bold text-slate-900">${sp.stock} <span class="font-normal text-slate-400">/ ${sp.minStock}</span></td>
+                      <td class="py-3 px-4 font-mono text-slate-700">₹${sp.unitCost.toLocaleString('en-IN')}</td>
+                      <td class="py-3 px-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${st.cls}"><span class="w-1.5 h-1.5 rounded-full ${st.dot}"></span>${st.label}</span></td>
+                      <td class="py-3 px-4 text-right space-x-1">
+                        ${canManageOps() ? `
+                          <button type="button" onclick="adjustSpare('${sp.sku}', -1)" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">-</button>
+                          <button type="button" onclick="adjustSpare('${sp.sku}', 1)" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-blue-700 font-bold">+</button>
+                          ${sp.stock < sp.minStock ? `<button type="button" onclick="restockSpare('${sp.sku}')" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold">Restock</button>` : ''}
+                        ` : '<span class="text-slate-400">Read-only</span>'}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderKaizen() {
+      return `
+        <div class="premium-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-2">
+          <div class="text-xs font-medium text-slate-600">Continuous Improvement &amp; Zero-Breakdown Kaizen Board (Click any card for full Admin/Manager view)</div>
+          <button type="button" onclick="openAddKaizenModal()" class="btn-primary px-3.5 py-2 rounded-xl text-xs font-semibold text-white inline-flex items-center gap-1.5"><i data-lucide="lightbulb" class="w-3.5 h-3.5"></i> Submit Kaizen</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          ${state.kaizens.map(k => `
+            <div class="premium-card premium-card-hover rounded-2xl p-5 flex flex-col justify-between gap-4">
+              <div class="cursor-pointer" onclick="openKaizenDetailModal('${k.id}')">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-mono text-xs text-indigo-600 font-semibold">${k.id} • ${k.category || 'Improvement'}</span>
+                  <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold ${k.stage === 'Implemented' ? 'bg-emerald-50 text-emerald-700' : k.stage === 'Under Review' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}">${k.stage}</span>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">${k.title}</h3>
+                <p class="text-xs text-slate-500 mt-1">${k.area} • By ${k.owner}</p>
+                <p class="text-xs text-slate-600 mt-2 line-clamp-2">${k.problem || ''}</p>
+                <div class="mt-3 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700">Impact: ${k.saving}</div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="openKaizenDetailModal('${k.id}')" class="py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-xs font-semibold text-blue-700">View Details</button>
+                ${canManageOps() ? `<button type="button" onclick="advanceKaizen('${k.id}')" class="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700">Advance Stage</button>` : `<span class="py-2 text-center rounded-xl bg-slate-50 text-xs font-medium text-slate-400">Review Pending</span>`}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderNotifications() {
+      const list = state.notifications.filter(n => state.notifFilter === 'All' || !n.read);
+      return `
+        <div class="premium-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex gap-1.5">
+            <button type="button" onclick="state.notifFilter='All'; renderApp()" class="px-3 py-1.5 rounded-xl text-xs font-semibold ${state.notifFilter === 'All' ? 'bg-blue-600 text-white' : 'text-slate-600'}">All (${state.notifications.length})</button>
+            <button type="button" onclick="state.notifFilter='Unread'; renderApp()" class="px-3 py-1.5 rounded-xl text-xs font-semibold ${state.notifFilter === 'Unread' ? 'bg-blue-600 text-white' : 'text-slate-600'}">Unread (${getUnreadCount()})</button>
+          </div>
+          <button type="button" onclick="markAllNotifsRead()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700">Mark All Read</button>
+        </div>
+        <div class="space-y-3">
+          ${list.map(n => `
+            <div class="premium-card rounded-2xl p-4 flex items-start justify-between gap-4 ${!n.read ? 'border-l-4 border-l-blue-600' : 'opacity-70'}">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${n.type === 'critical' ? 'bg-rose-50 text-rose-600' : n.type === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}">
+                  <i data-lucide="${n.type === 'critical' ? 'alert-triangle' : n.type === 'warning' ? 'package-x' : 'info'}" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="text-sm font-bold text-slate-900">${n.title}</div>
+                  <div class="text-xs text-slate-600 mt-0.5">${n.message}</div>
+                  <div class="text-[11px] text-slate-400 mt-1">${n.time}</div>
+                </div>
+              </div>
+              ${!n.read ? `<button type="button" onclick="markNotifRead('${n.id}')" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold shrink-0">Mark Read</button>` : '<span class="text-[11px] text-slate-400">Read</span>'}
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderUserManagement() {
+      const isAdmin = state.user.role === 'Admin';
+      const canSetPass = state.user.role === 'Admin' || state.user.role === 'Engineer';
+      return `
+        <div class="premium-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-2">
+          <div class="text-xs font-medium text-slate-600">Roles: <strong>Admin</strong>, <strong>Engineer</strong>, <strong>Technician</strong> • Only Admin can Add/Edit/Delete users</div>
+          ${isAdmin ? `<button type="button" onclick="openAddUserModal()" class="btn-primary px-3.5 py-2 rounded-xl text-xs font-semibold text-white inline-flex items-center gap-1.5"><i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Add User</button>` : `<span class="px-3 py-1.5 rounded-xl bg-slate-100 text-xs font-semibold text-slate-500">Admin Only for Add/Edit/Delete</span>`}
+        </div>
+        <div class="premium-card rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px]">
+                <tr><th class="py-3.5 px-4">Login User Name</th><th class="py-3.5 px-4">Password</th><th class="py-3.5 px-4">Role</th><th class="py-3.5 px-4">Unit</th><th class="py-3.5 px-4">Status</th><th class="py-3.5 px-4 text-right">Actions</th></tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${state.users.map(u => `
+                  <tr class="hover:bg-slate-50/70">
+                    <td class="py-3 px-4 font-semibold text-slate-900">${u.name}</td>
+                    <td class="py-3 px-4 font-mono text-slate-600">${canSetPass ? (u.password || '123456') : '••••••'}</td>
+                    <td class="py-3 px-4"><span class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold ${u.role === 'Admin' ? 'bg-indigo-50 text-indigo-700' : u.role === 'Engineer' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-700'}">${u.role}</span></td>
+                    <td class="py-3 px-4 text-slate-600">${u.unit}</td>
+                    <td class="py-3 px-4"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${u.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}">${u.status}</span></td>
+                    <td class="py-3 px-4 text-right space-x-1">
+                      ${isAdmin ? `
+                        <button type="button" onclick="openEditUserModal('${u.id}')" class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold">Edit</button>
+                        <button type="button" onclick="deleteUser('${u.id}')" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold">Delete</button>
+                      ` : '<span class="text-slate-400">Read-only</span>'}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSettings() {
+      const s = state.settings;
+      return `
+        <form onsubmit="saveSettings(event)" class="max-w-2xl premium-card rounded-2xl p-6 space-y-5">
+          <div><h2 class="text-base font-bold text-slate-900">Plant &amp; Automation Configuration</h2><p class="text-xs text-slate-500">Control automatic spare deduction, low-stock alerts, and CAPA creation</p></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-700 mb-1.5">Plant Name</label><input id="set-plant" type="text" value="${s.plantName}" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm" /></div>
+            <div><label class="block text-xs font-semibold text-slate-700 mb-1.5">Target Availability (%)</label><input id="set-avail" type="number" step="0.1" value="${s.targetAvailability}" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm font-mono" /></div>
+            <div><label class="block text-xs font-semibold text-slate-700 mb-1.5">Target MTTR (min)</label><input id="set-mttr" type="number" value="${s.targetMttr}" class="input-clean w-full rounded-xl px-3.5 py-2.5 text-sm font-mono" /></div>
+          </div>
+          <div class="space-y-3 pt-2 border-t border-slate-200">
+            <label class="flex items-center justify-between cursor-pointer"><span class="text-xs font-semibold text-slate-700">Auto-Deduct Spare Consumables on Downtime Entry</span><input id="set-deduct" type="checkbox" ${s.autoDeductSpare ? 'checked' : ''} class="w-4 h-4 accent-blue-600" /></label>
+            <label class="flex items-center justify-between cursor-pointer"><span class="text-xs font-semibold text-slate-700">Auto-Alert when Spare Drops Below Min Stock</span><input id="set-low" type="checkbox" ${s.autoLowStockAlert ? 'checked' : ''} class="w-4 h-4 accent-blue-600" /></label>
+          </div>
+          <div class="flex items-center justify-between pt-3">
+            ${isAdmin() ? `
+              <button type="button" onclick="resetDemoData()" class="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-700">Reset Data</button>
+              <button type="submit" class="btn-primary px-5 py-2.5 rounded-xl text-xs font-semibold text-white">Save Settings</button>
+            ` : `<span class="text-xs font-semibold text-rose-600">Only Admin can modify Plant Settings</span>`}
+          </div>
+        </form>
+      `;
+    }
+
+    // =========================================================================
+    // 6. AUTOMATIC MUTATIONS & MODALS
+    // =========================================================================
+    function quickFillDowntime() {
+      const unit = document.getElementById('dt-unit').value;
+      document.getElementById('dt-equip').value = unit === 'Unit 1' ? 'ROB-U1-04 (ABB Spot Robot)' : 'CONV-U2-05 (Servo Conveyor)';
+      const unitSpares = state.spareParts.filter(s => s.unit === unit && s.stock > 0);
+      if (unitSpares.length) {
+        selectSpareOption(unitSpares[0].sku);
+      }
+      document.getElementById('dt-tech').value = unit === 'Unit 1' ? 'Karthik R.' : 'Suresh M.';
+      document.getElementById('dt-problem').value = 'Machine stopped mid-cycle with axis alarm on HMI';
+      document.getElementById('dt-cause').value = 'Servo drive fault & sensor cable wear detected during cycle';
+      document.getElementById('dt-action').value = 'Replaced spare module, verified interlock & resumed auto mode';
+      updateSpareLivePreview();
+      showToast('Sample entry + spare usage populated', 'info');
+    }
+
+    function submitDowntimeEntry(e) {
+      e.preventDefault();
+      const unit = document.getElementById('dt-unit').value;
+      const equipment = document.getElementById('dt-equip').value.trim();
+      const sku = document.getElementById('dt-spare-sku').value;
+      const typedSpare = (document.getElementById('dt-spare-search').value || '').trim();
+      const qty = parseInt(document.getElementById('dt-spare-qty').value, 10) || 0;
+      const severity = document.getElementById('dt-severity').value;
+      const problemDesc = document.getElementById('dt-problem').value.trim();
+      const rootCause = document.getElementById('dt-cause').value.trim();
+      const imageData = document.getElementById('dt-image-data')?.value || '';
+
+      let spareModel = typedSpare && !sku ? `${typedSpare} (Not in spare list)` : 'None';
+      let spareCost = 0;
+
+      if (sku && qty > 0) {
+        const sp = state.spareParts.find(x => x.sku === sku && x.unit === unit);
+        if (sp) {
+          if (state.settings.autoDeductSpare) {
+            sp.stock = Math.max(0, sp.stock - qty);
+          }
+          spareModel = sp.model;
+          spareCost = sp.unitCost * qty;
+
+          const newStatus = getSpareStatus(sp).label;
+          if (state.settings.autoLowStockAlert && sp.stock < sp.minStock) {
+            state.notifications.unshift({
+              id: 'N-' + Date.now(),
+              type: sp.stock === 0 ? 'critical' : 'warning',
+              title: `${newStatus}: ${sp.sku} (${unit})`,
+              message: `${sp.model} dropped to ${sp.stock} units after ${qty}x consumed in downtime log (Min: ${sp.minStock}).`,
+              time: 'Just now',
+              read: false,
+            });
+          }
+        }
+      }
+
+      const newRec = {
+        id: 'DT-' + (2042 + state.downtimeRecords.length),
+        date: document.getElementById('dt-date').value,
+        unit, equipment,
+        shift: document.getElementById('dt-shift').value,
+        category: document.getElementById('dt-category').value,
+        severity,
+        durationMin: parseInt(document.getElementById('dt-duration').value, 10) || 15,
+        spareSku: sku, spareModel, spareQty: qty, spareCost,
+        problemDesc, rootCause, imageData,
+        actionTaken: document.getElementById('dt-action').value,
+        technician: document.getElementById('dt-tech').value,
+        status: 'Open',
+      };
+      state.downtimeRecords.unshift(newRec);
+
+      if (severity === 'Red') {
+        state.notifications.unshift({
+          id: 'N-R-' + Date.now(),
+          type: 'critical',
+          title: `Red Status Alert: ${equipment} (${unit})`,
+          message: rootCause,
+          time: 'Just now',
+          read: false,
+        });
+        if (document.getElementById('dt-auto-capa')?.checked) {
+          state.actions.unshift({
+            id: 'ACT-' + (304 + state.actions.length),
+            title: `CAPA for ${newRec.id}: ${rootCause.slice(0, 55)}`,
+            unit, priority: 'High', owner: newRec.technician, due: '2026-11-28', status: 'Pending',
+          });
+        }
+      }
+
+      saveState();
+      showToast(sku && qty > 0 ? `Logged ${newRec.id} & deducted ${qty}x ${spareModel} from ${unit}` : `Logged ${newRec.id} successfully`, 'success');
+      navigateTo('spare-parts');
+    }
+
+    function toggleRecordStatus(id) {
+      const rec = state.downtimeRecords.find(r => r.id === id);
+      if (!rec) return;
+      const order = ['Open', 'In Progress', 'Resolved'];
+      rec.status = order[(order.indexOf(rec.status) + 1) % order.length];
+      saveState(); renderApp();
+    }
+
+    function deleteRecord(id) {
+      openModal(`
+        <h3 class="text-base font-bold text-slate-900 mb-2">Delete Record ${id}?</h3>
+        <p class="text-xs text-slate-500 mb-5">This removes the record from your ledger.</p>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-xs font-semibold text-slate-700">Cancel</button>
+          <button type="button" onclick="confirmDeleteRecord('${id}')" class="px-4 py-2 rounded-xl bg-rose-600 text-xs font-semibold text-white">Delete</button>
+        </div>
+      `);
+    }
+
+    function confirmDeleteRecord(id) {
+      state.downtimeRecords = state.downtimeRecords.filter(r => r.id !== id);
+      saveState(); closeModal(); renderApp();
+      showToast(`Deleted ${id}`, 'warning');
+    }
+
+    function openRecordModal(id) {
+      const r = state.downtimeRecords.find(x => x.id === id);
+      if (!r) return;
+      openModal(`
+        <div class="flex items-center justify-between mb-3"><span class="font-mono text-sm font-bold text-blue-600">${r.id}</span>${severityBadge(r.severity)}</div>
+        <h3 class="text-base font-bold text-slate-900">${r.unit} • ${r.equipment}</h3>
+        <p class="text-xs text-slate-500 mb-4">${r.date} • ${r.shift} • ${r.durationMin} mins</p>
+        <div class="space-y-2.5 text-xs">
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><div class="text-slate-500 mb-1">Spare Consumed</div><div class="font-semibold text-indigo-700">${r.spareQty > 0 ? `${r.spareQty}x ${r.spareModel} (₹${(r.spareCost||0).toLocaleString('en-IN')})` : 'None'}</div></div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><div class="text-slate-500 mb-1">Problem Description</div><div class="text-slate-900">${r.problemDesc || r.rootCause}</div></div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><div class="text-slate-500 mb-1">Root Cause</div><div class="text-slate-900">${r.rootCause}</div></div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><div class="text-slate-500 mb-1">Action Taken</div><div class="text-slate-900">${r.actionTaken}</div></div>
+          ${r.imageData ? `<div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><div class="text-slate-500 mb-1.5">Technician Photo Proof</div><img src="${r.imageData}" alt="Down reason" class="max-h-48 w-auto rounded-xl border border-slate-200 object-contain" /></div>` : ''}
+        </div>
+        <div class="mt-5 flex justify-end"><button type="button" onclick="closeModal()" class="btn-primary px-4 py-2 rounded-xl text-xs font-semibold text-white">Close</button></div>
+      `);
+    }
+
+    function exportRecordsCSV() {
+      const records = getFilteredRecords();
+      const header = ['ID', 'Date', 'Unit', 'Equipment', 'Severity', 'DurationMin', 'SpareSKU', 'SpareModel', 'SpareQty', 'SpareCost', 'Status'];
+      const lines = [header.join(','), ...records.map(r => [r.id, r.date, r.unit, `"${r.equipment}"`, r.severity, r.durationMin, r.spareSku || '', `"${r.spareModel}"`, r.spareQty || 0, r.spareCost || 0, r.status].join(','))];
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'td_connex_downtime_spares.csv'; a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSV exported', 'success');
+    }
+
+    function adjustSpare(sku, delta) {
+      const sp = state.spareParts.find(x => x.sku === sku);
+      if (!sp) return;
+      sp.stock = Math.max(0, sp.stock + delta);
+      saveState(); renderApp();
+    }
+
+    function restockSpare(sku) {
+      const sp = state.spareParts.find(x => x.sku === sku);
+      if (!sp) return;
+      sp.stock = sp.minStock + 4;
+      saveState(); renderApp();
+      showToast(`Restocked ${sp.sku} (${sp.unit}) to ${sp.stock} units`, 'success');
+    }
+
+    function openAddSpareModal() {
+      openModal(`
+        <h3 class="text-base font-bold text-slate-900 mb-4">Add Unit-Specific Spare Part</h3>
+        <form onsubmit="addSpare(event)" class="space-y-3 text-xs">
+          <div class="grid grid-cols-2 gap-3">
+            <select id="sp-unit" class="input-clean rounded-xl px-3 py-2.5 font-semibold"><option>Unit 1</option><option>Unit 2</option></select>
+            <input id="sp-sku" required placeholder="SKU (e.g. U1-SEN-110)" class="input-clean rounded-xl px-3 py-2.5" />
+          </div>
+          <input id="sp-model" required placeholder="Spare Model Name" class="input-clean w-full rounded-xl px-3 py-2.5" />
+          <div class="grid grid-cols-3 gap-2">
+            <input id="sp-stock" type="number" min="0" value="5" class="input-clean rounded-xl px-3 py-2.5" placeholder="Stock" />
+            <input id="sp-min" type="number" min="1" value="3" class="input-clean rounded-xl px-3 py-2.5" placeholder="Min" />
+            <input id="sp-cost" type="number" min="1" value="1500" class="input-clean rounded-xl px-3 py-2.5" placeholder="Cost" />
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold">Cancel</button>
+            <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-white font-semibold">Add Spare</button>
+          </div>
+        </form>
+      `);
+    }
+
+    function addSpare(e) {
+      e.preventDefault();
+      state.spareParts.unshift({
+        sku: document.getElementById('sp-sku').value.trim(),
+        unit: document.getElementById('sp-unit').value,
+        model: document.getElementById('sp-model').value.trim(),
+        category: 'Automation',
+        stock: parseInt(document.getElementById('sp-stock').value, 10) || 0,
+        minStock: parseInt(document.getElementById('sp-min').value, 10) || 2,
+        unitCost: parseInt(document.getElementById('sp-cost').value, 10) || 1000,
+      });
+      saveState(); closeModal(); renderApp();
+      showToast('Unit spare added', 'success');
+    }
+
+    function completePm(id) {
+      const pm = state.pmSchedules.find(p => p.id === id);
+      if (!pm) return;
+      openModal(`
+        <h3 class="text-base font-bold text-slate-900 mb-1">Complete &amp; Verify PM (${pm.id})</h3>
+        <p class="text-xs text-slate-500 mb-4">${pm.unit} • ${pm.equipment} — ${pm.task}</p>
+        <form onsubmit="confirmCompletePm(event, '${pm.id}')" class="space-y-3 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Completed / Verified By (Name)</label>
+            <input id="pm-verifier" type="text" required value="${pm.owner || state.user.name}" placeholder="Enter engineer/technician name" class="input-clean w-full rounded-xl px-3 py-2.5" />
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold">Cancel</button>
+            <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-white font-semibold">Confirm Verified</button>
+          </div>
+        </form>
+      `);
+    }
+    function confirmCompletePm(e, id) {
+      e.preventDefault();
+      const pm = state.pmSchedules.find(p => p.id === id);
+      if (!pm) return;
+      pm.status = 'Completed';
+      pm.verifiedBy = document.getElementById('pm-verifier').value.trim() || state.user.name;
+      pm.verifiedAt = new Date().toISOString().slice(0, 10);
+      saveState(); closeModal(); renderApp();
+      showToast(`${pm.id} verified by ${pm.verifiedBy}`, 'success');
+    }
+
+    function openAddPmModal() {
+      openModal(`
+        <h3 class="text-base font-bold text-slate-900 mb-4">Schedule Preventive Maintenance</h3>
+        <form onsubmit="addPm(event)" class="space-y-3 text-xs">
+          <select id="pm-unit" class="input-clean w-full rounded-xl px-3 py-2.5"><option>Unit 1</option><option>Unit 2</option></select>
+          <input id="pm-eq" required placeholder="Equipment (e.g. ROB-U1-04)" class="input-clean w-full rounded-xl px-3 py-2.5" />
+          <input id="pm-task" required placeholder="Task Description" class="input-clean w-full rounded-xl px-3 py-2.5" />
+          <div class="flex justify-end gap-2 pt-2"><button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700">Cancel</button><button type="submit" class="btn-primary px-4 py-2 rounded-xl text-white font-semibold">Schedule</button></div>
+        </form>
+      `);
+    }
+    function addPm(e) {
+      e.preventDefault();
+      state.pmSchedules.unshift({ id: 'PM-' + (105 + state.pmSchedules.length), unit: document.getElementById('pm-unit').value, equipment: document.getElementById('pm-eq').value, task: document.getElementById('pm-task').value, frequency: 'Weekly', dueDate: '2026-11-28', owner: 'Venkatesh E.', status: 'Due Soon' });
+      saveState(); closeModal(); renderApp();
+    }
+
+    function cycleActionStatus(id) {
+      const a = state.actions.find(x => x.id === id); if (!a) return;
+      const order = ['Pending', 'In Progress', 'Completed'];
+      a.status = order[(order.indexOf(a.status) + 1) % order.length];
+      saveState(); renderApp();
+    }
+    function openAddActionModal() {
+      openModal(`
+        <h3 class="text-base font-bold text-slate-900 mb-4">New CAPA Action</h3>
+        <form onsubmit="addAction(event)" class="space-y-3 text-xs">
+          <input id="act-title" required placeholder="Action Title" class="input-clean w-full rounded-xl px-3 py-2.5" />
+          <div class="grid grid-cols-2 gap-3"><select id="act-unit" class="input-clean rounded-xl px-3 py-2.5"><option>Unit 1</option><option>Unit 2</option></select><select id="act-prio" class="input-clean rounded-xl px-3 py-2.5"><option>High</option><option>Medium</option><option>Low</option></select></div>
+          <input id="act-owner" required placeholder="Owner" class="input-clean w-full rounded-xl px-3 py-2.5" />
+          <div class="flex justify-end gap-2 pt-2"><button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700">Cancel</button><button type="submit" class="btn-primary px-4 py-2 rounded-xl text-white font-semibold">Add</button></div>
+        </form>
+      `);
+    }
+    function addAction(e) {
+      e.preventDefault();
+      state.actions.unshift({ id: 'ACT-' + (304 + state.actions.length), title: document.getElementById('act-title').value, unit: document.getElementById('act-unit').value, priority: document.getElementById('act-prio').value, owner: document.getElementById('act-owner').value, due: '2026-11-30', status: 'Pending' });
+      saveState(); closeModal(); renderApp();
+    }
+
+    function advanceKaizen(id) {
+      const k = state.kaizens.find(x => x.id === id); if (!k) return;
+      const order = ['Submitted', 'Under Review', 'Implemented'];
+      k.stage = order[(order.indexOf(k.stage) + 1) % order.length];
+      saveState(); renderApp();
+    }
+    function handleImageUpload(input, hiddenId, previewId, clearBtnId) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const dataUrl = ev.target.result;
+        document.getElementById(hiddenId).value = dataUrl;
+        const prev = document.getElementById(previewId);
+        prev.innerHTML = `<img src="${dataUrl}" alt="Uploaded proof" class="max-h-32 w-auto rounded-xl border border-slate-200 object-contain" />`;
+        prev.classList.remove('hidden');
+        if (clearBtnId) document.getElementById(clearBtnId)?.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+    function clearEntryImage() {
+      const f = document.getElementById('dt-image-file');
+      const h = document.getElementById('dt-image-data');
+      const p = document.getElementById('dt-image-preview');
+      const c = document.getElementById('dt-img-clear');
+      if (f) f.value = '';
+      if (h) h.value = '';
+      if (p) { p.innerHTML = ''; p.classList.add('hidden'); }
+      if (c) c.classList.add('hidden');
+    }
+    function fillSampleKaizenReport() {
+      document.getElementById('kz-title').value = 'Quick-Release Sensor Guard for Welding Cell';
+      document.getElementById('kz-area').value = 'Unit 1 • Line A';
+      document.getElementById('kz-cat').value = 'Downtime Reduction';
+      document.getElementById('kz-saving').value = '45 min/week saved & ₹12,000/mo';
+      document.getElementById('kz-problem').value = 'Before: Weld spatter damaged proximity sensor bracket every 3 days, causing 30 min unplanned stoppages.';
+      document.getElementById('kz-counter').value = 'After: Installed hinged SS shield with quick-release thumb screw for 2-minute inspection without tools.';
+      showToast('Sample Kaizen report loaded — attach Before/After proof images if needed', 'info');
+    }
+    function openAddKaizenModal() {
+      openModal(`
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-base font-bold text-slate-900">Submit Kaizen Report</h3>
+          <button type="button" onclick="fillSampleKaizenReport()" class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[11px] font-semibold text-blue-700">Fill Sample Report</button>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">Add topic, Before/After improvement details &amp; optional proof photos for Admin/Manager review</p>
+        <form onsubmit="addKaizen(event)" class="space-y-3 text-xs">
+          <input id="kz-title" required placeholder="Kaizen Topic / Title" class="input-clean w-full rounded-xl px-3 py-2.5" />
+          <div class="grid grid-cols-2 gap-3">
+            <input id="kz-area" required placeholder="Unit &amp; Line (e.g. Unit 1 • Line A)" class="input-clean rounded-xl px-3 py-2.5" />
+            <select id="kz-cat" class="input-clean rounded-xl px-3 py-2.5"><option>Downtime Reduction</option><option>Cost Saving</option><option>Safety</option><option>Quality</option><option>Productivity</option></select>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <input id="kz-owner" required value="${state.user.name}" placeholder="Submitted By" class="input-clean rounded-xl px-3 py-2.5" />
+            <input id="kz-saving" required placeholder="Expected Savings (e.g. 45 min/wk)" class="input-clean rounded-xl px-3 py-2.5" />
+          </div>
+          <div class="p-3 rounded-xl bg-rose-50/60 border border-rose-200 space-y-2">
+            <label class="block font-bold text-rose-800">Before (Problem Statement)</label>
+            <textarea id="kz-problem" rows="2" required placeholder="Describe the problem before improvement..." class="input-clean w-full rounded-xl px-3 py-2 bg-white"></textarea>
+            <label class="block text-[11px] font-semibold text-slate-600">Before Proof Image (Optional)</label>
+            <input type="file" accept="image/*" onchange="handleImageUpload(this, 'kz-before-img', 'kz-before-prev')" class="block w-full text-[11px] text-slate-600" />
+            <input id="kz-before-img" type="hidden" value="" />
+            <div id="kz-before-prev" class="hidden"></div>
+          </div>
+          <div class="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2">
+            <label class="block font-bold text-emerald-800">After (Improvement / Countermeasure)</label>
+            <textarea id="kz-counter" rows="2" required placeholder="Describe the improvement after Kaizen..." class="input-clean w-full rounded-xl px-3 py-2 bg-white"></textarea>
+            <label class="block text-[11px] font-semibold text-slate-600">After Proof Image (Optional)</label>
+            <input type="file" accept="image/*" onchange="handleImageUpload(this, 'kz-after-img', 'kz-after-prev')" class="block w-full text-[11px] text-slate-600" />
+            <input id="kz-after-img" type="hidden" value="" />
+            <div id="kz-after-prev" class="hidden"></div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2"><button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold">Cancel</button><button type="submit" class="btn-primary px-4 py-2 rounded-xl text-white font-semibold">Submit Kaizen</button></div>
+        </form>
+      `);
+    }
+    function addKaizen(e) {
+      e.preventDefault();
+      state.kaizens.unshift({
+        id: 'KZ-' + (15 + state.kaizens.length),
+        title: document.getElementById('kz-title').value.trim(),
+        area: document.getElementById('kz-area').value.trim(),
+        category: document.getElementById('kz-cat').value,
+        owner: document.getElementById('kz-owner').value.trim() || state.user.name,
+        date: new Date().toISOString().slice(0, 10),
+        problem: document.getElementById('kz-problem').value.trim(),
+        countermeasure: document.getElementById('kz-counter').value.trim(),
+        beforeImage: document.getElementById('kz-before-img')?.value || '',
+        afterImage: document.getElementById('kz-after-img')?.value || '',
+        saving: document.getElementById('kz-saving').value.trim(),
+        stage: 'Submitted',
+      });
+      saveState(); closeModal(); renderApp();
+      showToast('Full Kaizen report submitted', 'success');
+    }
+    function openKaizenDetailModal(id) {
+      const k = state.kaizens.find(x => x.id === id);
+      if (!k) return;
+      openModal(`
+        <div class="flex items-center justify-between mb-3">
+          <span class="font-mono text-sm font-bold text-indigo-600">${k.id} • ${k.category || 'Improvement'}</span>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${k.stage === 'Implemented' ? 'bg-emerald-50 text-emerald-700' : k.stage === 'Under Review' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}">${k.stage}</span>
+        </div>
+        <h3 class="text-base font-bold text-slate-900">${k.title}</h3>
+        <p class="text-xs text-slate-500 mb-4">${k.area} • Submitted by <strong>${k.owner}</strong> (${k.date || '2026-11-25'})</p>
+        <div class="space-y-3 text-xs">
+          <div class="p-3 rounded-xl bg-rose-50/70 border border-rose-200 space-y-2">
+            <div class="font-bold text-rose-800">Before (Problem Statement)</div>
+            <div class="text-slate-800">${k.problem || 'Not specified'}</div>
+            ${k.beforeImage ? `<img src="${k.beforeImage}" alt="Before proof" class="max-h-40 w-auto rounded-lg border border-rose-200 object-contain" />` : ''}
+          </div>
+          <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2">
+            <div class="font-bold text-blue-800">After (Countermeasure / Improvement)</div>
+            <div class="text-slate-800">${k.countermeasure || 'Not specified'}</div>
+            ${k.afterImage ? `<img src="${k.afterImage}" alt="After proof" class="max-h-40 w-auto rounded-lg border border-blue-200 object-contain" />` : ''}
+          </div>
+          <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200"><div class="font-bold text-emerald-800 mb-1">Verified Impact / Savings</div><div class="text-emerald-900 font-semibold">${k.saving}</div></div>
+        </div>
+        <div class="mt-5 flex justify-end gap-2">
+          ${canManageOps() ? `<button type="button" onclick="advanceKaizen('${k.id}'); closeModal();" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700">Advance Stage</button>` : ''}
+          <button type="button" onclick="closeModal()" class="btn-primary px-4 py-2 rounded-xl text-xs font-semibold text-white">Close</button>
+        </div>
+      `);
+    }
+
+    function markNotifRead(id) { const n = state.notifications.find(x => x.id === id); if (n) { n.read = true; saveState(); renderApp(); } }
+    function markAllNotifsRead() { state.notifications.forEach(n => n.read = true); saveState(); renderApp(); }
+    function getInitials(name) {
+      return (name || 'U').trim().split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase();
+    }
+    function openAddUserModal() {
+      if (state.user.role !== 'Admin') return showToast('Only Admin can add users', 'error');
+      openModal(`
+        <h3 class="text-base font-bold text-slate-900 mb-4">Add New User (Admin Only)</h3>
+        <form onsubmit="addUser(event)" class="space-y-3 text-xs">
+          <div><label class="block font-semibold text-slate-700 mb-1">User Name (Used for Login)</label><input id="u-name" required placeholder="e.g. Venkatesh G" class="input-clean w-full rounded-xl px-3 py-2.5" /></div>
+          <div><label class="block font-semibold text-slate-700 mb-1">Login Password</label><input id="u-pass" type="text" required placeholder="e.g. 123456" class="input-clean w-full rounded-xl px-3 py-2.5 font-mono" /></div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="block font-semibold text-slate-700 mb-1">Role</label><select id="u-role" class="input-clean w-full rounded-xl px-3 py-2.5"><option>Admin</option><option>Engineer</option><option>Technician</option></select></div>
+            <div><label class="block font-semibold text-slate-700 mb-1">Unit</label><select id="u-unit" class="input-clean w-full rounded-xl px-3 py-2.5"><option>All Units</option><option>Unit 1</option><option>Unit 2</option></select></div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2"><button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold">Cancel</button><button type="submit" class="btn-primary px-4 py-2 rounded-xl text-white font-semibold">Create User</button></div>
+        </form>
+      `);
+    }
+    function addUser(e) {
+      e.preventDefault();
+      state.users.push({
+        id: 'U-' + Date.now(),
+        name: document.getElementById('u-name').value.trim(),
+        password: document.getElementById('u-pass').value,
+        role: document.getElementById('u-role').value,
+        unit: document.getElementById('u-unit').value,
+        status: 'Active',
+      });
+      saveState(); closeModal(); renderApp();
+      showToast('User created successfully', 'success');
+    }
+    function openEditUserModal(id) {
+      if (state.user.role !== 'Admin') return showToast('Only Admin can edit users', 'error');
+      const u = state.users.find(x => x.id === id);
+      if (!u) return;
+      openModal(`
+        <h3 class="text-base font-bold text-slate-900 mb-4">Edit User</h3>
+        <form onsubmit="saveEditUser(event, '${u.id}')" class="space-y-3 text-xs">
+          <div><label class="block font-semibold text-slate-700 mb-1">User Name (Login ID)</label><input id="eu-name" required value="${u.name}" class="input-clean w-full rounded-xl px-3 py-2.5" /></div>
+          <div><label class="block font-semibold text-slate-700 mb-1">Password</label><input id="eu-pass" type="text" required value="${u.password || '123456'}" class="input-clean w-full rounded-xl px-3 py-2.5 font-mono" /></div>
+          <div class="grid grid-cols-3 gap-2">
+            <div><label class="block font-semibold text-slate-700 mb-1">Role</label><select id="eu-role" class="input-clean w-full rounded-xl px-2.5 py-2.5"><option ${u.role==='Admin'?'selected':''}>Admin</option><option ${u.role==='Engineer'?'selected':''}>Engineer</option><option ${u.role==='Technician'?'selected':''}>Technician</option></select></div>
+            <div><label class="block font-semibold text-slate-700 mb-1">Unit</label><select id="eu-unit" class="input-clean w-full rounded-xl px-2.5 py-2.5"><option ${u.unit==='All Units'?'selected':''}>All Units</option><option ${u.unit==='Unit 1'?'selected':''}>Unit 1</option><option ${u.unit==='Unit 2'?'selected':''}>Unit 2</option></select></div>
+            <div><label class="block font-semibold text-slate-700 mb-1">Status</label><select id="eu-status" class="input-clean w-full rounded-xl px-2.5 py-2.5"><option ${u.status==='Active'?'selected':''}>Active</option><option ${u.status==='Inactive'?'selected':''}>Inactive</option></select></div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2"><button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold">Cancel</button><button type="submit" class="btn-primary px-4 py-2 rounded-xl text-white font-semibold">Save Changes</button></div>
+        </form>
+      `);
+    }
+    function saveEditUser(e, id) {
+      e.preventDefault();
+      const u = state.users.find(x => x.id === id);
+      if (!u) return;
+      u.name = document.getElementById('eu-name').value.trim();
+      u.password = document.getElementById('eu-pass').value;
+      u.role = document.getElementById('eu-role').value;
+      u.unit = document.getElementById('eu-unit').value;
+      u.status = document.getElementById('eu-status').value;
+      if (state.user.id === u.id) {
+        state.user.name = u.name;
+        state.user.role = u.role;
+        state.user.initials = getInitials(u.name);
+      }
+      saveState(); closeModal(); renderApp();
+      showToast('User updated', 'success');
+    }
+    function deleteUser(id) {
+      if (state.user.role !== 'Admin') return showToast('Only Admin can delete users', 'error');
+      if (state.users.length <= 1) return showToast('Cannot delete the last remaining user', 'warning');
+      state.users = state.users.filter(x => x.id !== id);
+      saveState(); renderApp();
+      showToast('User deleted', 'warning');
+    }
+
+    function saveSettings(e) {
+      e.preventDefault();
+      state.settings.plantName = document.getElementById('set-plant').value;
+      state.settings.targetAvailability = parseFloat(document.getElementById('set-avail').value) || 96.5;
+      state.settings.targetMttr = parseInt(document.getElementById('set-mttr').value, 10) || 25;
+      state.settings.autoDeductSpare = document.getElementById('set-deduct').checked;
+      state.settings.autoLowStockAlert = document.getElementById('set-low').checked;
+      saveState(); showToast('Settings saved', 'success');
+    }
+    function resetDemoData() { state = JSON.parse(JSON.stringify(DEFAULT_STATE)); saveState(); renderApp(); showToast('Demo data reset', 'info'); }
+
+    function openPasswordModal() {
+      if (state.user.role !== 'Admin' && state.user.role !== 'Engineer') {
+        return showToast('Only Admin and Engineer can change passwords', 'warning');
+      }
+      openModal(`
+        <h3 class="text-base font-bold text-slate-900 mb-2">Update Password</h3>
+        <p class="text-xs text-slate-500 mb-3">User: <strong>${state.user.name}</strong> (${state.user.role})</p>
+        <form onsubmit="updateMyPassword(event)" class="space-y-3 text-xs">
+          <input id="pw-new" type="password" required placeholder="New Password" class="input-clean w-full rounded-xl px-3 py-2.5" />
+          <div class="flex justify-end gap-2 pt-2"><button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold">Cancel</button><button type="submit" class="btn-primary px-4 py-2 rounded-xl text-white font-semibold">Update</button></div>
+        </form>
+      `);
+    }
+    function updateMyPassword(e) {
+      e.preventDefault();
+      const np = document.getElementById('pw-new').value.trim();
+      if (!np) return;
+      const u = state.users.find(x => x.id === state.user.id || x.name.toLowerCase() === state.user.name.toLowerCase());
+      if (u) {
+        u.password = np;
+      } else {
+        state.users.push({ id: state.user.id || 'U-01', name: state.user.name, password: np, role: state.user.role, unit: 'All Units', status: 'Active' });
+      }
+      saveState(); closeModal();
+      showToast('Password updated for next login', 'success');
+    }
+    function toggleLoginPass() {
+      const inp = document.getElementById('login-pass');
+      const btn = document.getElementById('login-pass-toggle');
+      if (!inp || !btn) return;
+      const show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      btn.textContent = show ? 'Hide' : 'Show';
+    }
+    function resetAdminCreds() {
+      let admin = state.users.find(u => u.id === 'U-01' || u.role === 'Admin');
+      if (!admin) {
+        admin = { id: 'U-01', name: 'Venkatesh G', password: '123456', role: 'Admin', unit: 'All Units', status: 'Active' };
+        state.users.unshift(admin);
+      } else {
+        admin.name = 'Venkatesh G';
+        admin.password = '123456';
+        admin.status = 'Active';
+      }
+      saveState();
+      document.getElementById('login-name').value = 'Venkatesh G';
+      document.getElementById('login-pass').value = '123456';
+      document.getElementById('login-error').classList.add('hidden');
+      showToast('Admin reset to Venkatesh G / 123456', 'info');
+    }
+    function openLogoutModal() {
+      openModal(`
+        <h3 class="text-base font-bold text-slate-900 mb-2">Sign Out of TDConnex?</h3>
+        <p class="text-xs text-slate-500 mb-5">Signed in as <strong>${state.user.name}</strong> (${state.user.role}).</p>
+        <div class="flex justify-end gap-2"><button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">Stay</button><button type="button" onclick="performLogout()" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold">Logout</button></div>
+      `);
+    }
+    function performLogout() {
+      state.isLoggedIn = false;
+      saveState();
+      closeModal();
+      renderApp();
+    }
+    function handleLogin(e) {
+      e.preventDefault();
+      const name = document.getElementById('login-name').value.trim().toLowerCase();
+      const pass = document.getElementById('login-pass').value.trim();
+      const err = document.getElementById('login-error');
+      const matched = state.users.find(u => u.name.trim().toLowerCase() === name && String(u.password || '123456').trim() === pass);
+      if (!matched) {
+        err.textContent = 'Invalid User Name or Password.';
+        err.classList.remove('hidden');
+        return;
+      }
+      if (matched.status !== 'Active') {
+        err.textContent = 'This account is Inactive. Contact Admin.';
+        err.classList.remove('hidden');
+        return;
+      }
+      err.classList.add('hidden');
+      state.isLoggedIn = true;
+      state.user = { id: matched.id, name: matched.name, role: matched.role, initials: getInitials(matched.name) };
+      saveState();
+      renderApp();
+      showToast(`Welcome, ${matched.name} (${matched.role})`, 'success');
+    }
+
+    function openModal(html) {
+      const overlay = document.getElementById('modal-overlay');
+      document.getElementById('modal-box').innerHTML = html;
+      overlay.classList.remove('hidden'); overlay.classList.add('flex');
+    }
+    function closeModal() {
+      const overlay = document.getElementById('modal-overlay');
+      overlay.classList.add('hidden'); overlay.classList.remove('flex');
+    }
+    document.getElementById('modal-overlay').addEventListener('click', (e) => { if (e.target.id === 'modal-overlay') closeModal(); });
+
+    // =========================================================================
+    // 7. RENDER LOOP
+    // =========================================================================
+    function renderApp() {
+      const loginEl = document.getElementById('login-screen');
+      if (loginEl) {
+        if (!state.isLoggedIn) {
+          loginEl.classList.remove('hidden');
+          loginEl.classList.add('flex');
+          return;
+        }
+        loginEl.classList.add('hidden');
+        loginEl.classList.remove('flex');
+      }
+      const sbName = document.getElementById('sidebar-username');
+      const sbRole = document.getElementById('sidebar-role');
+      const sbInit = document.getElementById('sidebar-initials');
+      if (sbName) sbName.textContent = state.user.name;
+      if (sbRole) sbRole.textContent = state.user.role;
+      if (sbInit) sbInit.textContent = state.user.initials || getInitials(state.user.name);
+      destroyCharts();
+      renderSidebar();
+      renderHeader();
+      const main = document.getElementById('main-content');
+      const renderers = {
+        'dashboard': renderDashboard,
+        'downtime-entry': renderDowntimeEntry,
+        'downtime-records': renderDowntimeRecords,
+        'reports-analytics': renderReportsAnalytics,
+        'pareto-analysis': renderParetoAnalysis,
+        'preventive-maint': renderPreventiveMaint,
+        'action-tracking': renderActionTracking,
+        'spare-parts': renderSpareParts,
+        'kaizen': renderKaizen,
+        'notifications': renderNotifications,
+        'user-management': renderUserManagement,
+        'settings': renderSettings,
+      };
+      main.innerHTML = (renderers[state.activeView] || renderDashboard)();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      if (state.activeView === 'dashboard') initDashboardCharts();
+      if (state.activeView === 'downtime-entry') onEntryUnitChange();
+      if (state.activeView === 'reports-analytics') initReportsChart();
+      if (state.activeView === 'pareto-analysis') initParetoChart();
+    }
+
+    function startSplashSequence() {
+      const splash = document.getElementById('splash-screen');
+      const bar = document.getElementById('splash-bar');
+      const txt = document.getElementById('splash-text');
+      renderApp();
+      if (!splash || !bar) return;
+      setTimeout(() => { bar.style.width = '55%'; if (txt) txt.textContent = 'Syncing Unit 1 & Unit 2 Modules...'; }, 280);
+      setTimeout(() => { bar.style.width = '100%'; if (txt) txt.textContent = 'Ready'; }, 950);
+      setTimeout(() => {
+        splash.style.opacity = '0';
+        setTimeout(() => splash.classList.add('hidden'), 480);
+      }, 1450);
+    }
+    window.addEventListener('DOMContentLoaded', startSplashSequence);
+  </script>
+</body>
+</html>
